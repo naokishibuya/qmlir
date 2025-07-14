@@ -54,7 +54,7 @@ git clone https://github.com/llvm/llvm-project.git
 This repository contains **only** the dialect and pass source files, intended for integration into LLVM/MLIR.
 
 ```bash
-cp -rp mlir <path-to-your-llvm-project>/
+cp -rp mlir /path/to/llvm-project/
 ```
 ### 3. Update CMake
 
@@ -85,8 +85,10 @@ For MLIR setup instructions, see [MLIR's official documentation](https://mlir.ll
 An example input file is provided in the `examples/` folder. You can run the pass on this file to see the optimization in action.
 
 ```bash
-bin/mlir-opt --quantum-cancel-x examples/test_input.mlir
+/path/to/llvm-project/bin/mlir-opt --quantum-cancel-x examples/test_input.mlir
 ```
+
+The `--quantum-cancel-x` option tells mlir-opt to run the custom pass added for cancelling consecutive X gates. Without specifying it, no transformation will occur.
 
 **Expected output:**
 

@@ -1,7 +1,7 @@
 //===- QuantumDialect.cpp - Quantum Dialect Definition ------------------===//
 
-#include "Quantum/QuantumDialect.h"
-#include "Quantum/QuantumOps.h"
+#include "mlir/Dialect/Quantum/QuantumDialect.h"
+#include "mlir/Dialect/Quantum/QuantumOps.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/DialectImplementation.h"
 
@@ -11,7 +11,7 @@ using namespace mlir::quantum;
 void QuantumDialect::initialize() {
   addOperations<
 #define GET_OP_LIST
-#include "Quantum/QuantumOps.cpp.inc"
+#include "mlir/Dialect/Quantum/QuantumOps.cpp.inc"
   >();
 }
 

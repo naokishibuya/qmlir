@@ -7,7 +7,7 @@
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/BuiltinTypes.h"
 
-#include "Quantum/QuantumOpsDialect.h.inc"
+#include "mlir/Dialect/Quantum/QuantumOpsDialect.h.inc"
 
 #define GET_OP_CLASSES
 #include "Quantum/QuantumOps.h.inc"

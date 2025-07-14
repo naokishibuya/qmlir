@@ -1,6 +1,6 @@
 //===- QuantumCancelXPass.cpp - Quantum X Gate Cancellation Pass --------===//
 
-#include "Quantum/QuantumOps.h"
+#include "mlir/Dialect/Quantum/QuantumOps.h"
 #include "mlir/IR/Function.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"

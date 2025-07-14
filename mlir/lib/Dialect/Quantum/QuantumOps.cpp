@@ -1,6 +1,6 @@
 //===- QuantumOps.cpp - Quantum Dialect Ops ---------------------===//
 
-#include "Quantum/QuantumOps.h"
+#include "mlir/Dialect/Quantum/QuantumOps.h"
 #include "mlir/IR/Builders.h"
 #include "mlir/IR/BuiltinTypes.h"
 
