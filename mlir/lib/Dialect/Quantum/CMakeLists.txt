@@ -1,21 +1,18 @@
-include_directories(${MLIR_MAIN_INCLUDE_DIR})
-
-set(LLVM_TARGET_DEFINITIONS QuantumOps.td)
-mlir_tablegen(QuantumOps.h.inc -gen-op-decls)
-mlir_tablegen(QuantumOps.cpp.inc -gen-op-defs)
-add_public_tablegen_target(MLIRQuantumOpsIncGen)
-
-add_mlir_library(MLIRQuantum
+add_mlir_dialect_library(MLIRQuantum
   QuantumDialect.cpp
   QuantumOps.cpp
-  QuantumCancelXPass.cpp
-  init.cpp
+  Passes/QuantumCancelXPass.cpp
+
+  ADDITIONAL_HEADER_DIRS
+  ${MLIR_MAIN_INCLUDE_DIR}/mlir/Dialect/Quantum
 
   DEPENDS
-  MLIRIR
   MLIRQuantumOpsIncGen
+  MLIRQuantumPassesIncGen
 
-  LINK_LIBS
-  PUBLIC
+  LINK_LIBS PUBLIC
   MLIRIR
+  MLIRPass
+  MLIRFuncDialect
+  MLIRTransforms
 )

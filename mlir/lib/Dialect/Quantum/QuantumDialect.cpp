@@ -1,21 +1,13 @@
-//===- QuantumDialect.cpp - Quantum Dialect Definition ------------------===//
-
-#include "mlir/Dialect/Quantum/QuantumDialect.h"
-#include "mlir/Dialect/Quantum/QuantumOps.h"
-#include "mlir/IR/Builders.h"
-#include "mlir/IR/DialectImplementation.h"
+#include "mlir/Dialect/Quantum/IR/Quantum.h"
 
 using namespace mlir;
 using namespace mlir::quantum;
 
+#include "mlir/Dialect/Quantum/IR/QuantumOpsDialect.cpp.inc"
+
 void QuantumDialect::initialize() {
   addOperations<
 #define GET_OP_LIST
-#include "mlir/Dialect/Quantum/QuantumOps.cpp.inc"
+#include "mlir/Dialect/Quantum/IR/QuantumOps.cpp.inc"
   >();
-}
-
-QuantumDialect::QuantumDialect(MLIRContext *context)
-    : Dialect(getDialectNamespace(), context, TypeID::get<QuantumDialect>()) {
-  initialize();
 }
