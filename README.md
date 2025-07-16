@@ -89,7 +89,18 @@ add_subdirectory(Quantum)
 add_subdirectory(Quantum)
 ```
 
-### 4. Build LLVM/MLIR
+### 4. Python Environment
+
+In the llvm-project, set up a Python virtual environment:
+
+```bash
+python3 -m venv venv
+source venv/bin/activate
+pip install --upgrade pip
+pip install -r mlir/python/requirements.txt
+```
+
+### 5. Build LLVM/MLIR
 
 ```bash
 mkdir build
@@ -104,7 +115,7 @@ ninja
 
 For detailed MLIR setup instructions, see [MLIR's official documentation](https://mlir.llvm.org/docs/).
 
-### 5. Test the Integration
+### 6. Test the Integration
 
 After building, you can test the quantum dialect using the provided test program:
 
