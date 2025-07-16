@@ -23,8 +23,9 @@ mlir/
 │   ├── Passes/                          # Pass implementations
 │   └── CMakeLists.txt                   # Build configuration
 ├── test/Dialect/Quantum/                # MLIR test files
-│   ├── *.mlir                           # Test cases and examples
+│   ├── *.mlir                           # Test cases with RUN: and CHECK: patterns
 │   └── lib/                             # Test programs
+│       └── Quantum/test-quantum.cpp    # Main test executable source
 ├── python/mlir/dialects/quantum/        # Python bindings
 │   ├── emit_quantum_mlir.py            # Circuit to MLIR conversion
 │   └── README.md                        # → Python bindings documentation
@@ -45,12 +46,20 @@ ninja
 ### 2. Test the Dialect
 
 ```bash
-# Run the quantum dialect test program
+# Run all quantum dialect tests
+ninja -C build check-mlir-dialect-quantum
+
+# Run the quantum dialect test program on a specific file
 ./build/bin/test-quantum-dialect mlir/test/Dialect/Quantum/double_x_test.mlir
 
 # Or pipe MLIR content
 cat mlir/test/Dialect/Quantum/double_x_test.mlir | ./build/bin/test-quantum-dialect
 ```
+
+**Testing Infrastructure:**
+- `check-mlir-dialect-quantum` - Ninja/CMake target that runs all quantum dialect tests
+- `test-quantum-dialect` - C++ executable that parses quantum MLIR and runs optimization passes
+- Test files use `RUN:` commands and `FileCheck` patterns to verify correct behavior
 
 ### 3. Use Python Bindings
 
@@ -64,13 +73,24 @@ python mlir/python/mlir/dialects/quantum/emit_quantum_mlir.py | ./build/bin/test
 
 ## Documentation
 
-### 📖 **Core Dialect Documentation**
+### **Core Dialect Documentation**
 - **Operations**: See `IR/QuantumOps.td` for quantum gate definitions
 - **Passes**: See `Passes/Passes.td` for optimization pass definitions
 - **Implementation**: See `lib/Dialect/Quantum/` for C++ implementation
 - **Tests**: See `test/Dialect/Quantum/` for MLIR test cases
 
-### 🐍 **[Python Bindings Documentation](../../../python/mlir/dialects/quantum/README.md)**
+### 🧪 **Testing Infrastructure**
+- **`check-mlir-dialect-quantum`**: Ninja target that runs all quantum dialect tests using LLVM lit
+- **`test-quantum-dialect`**: C++ executable (`test/lib/Dialect/Quantum/test-quantum.cpp`) that:
+  - Parses MLIR with quantum dialect operations
+  - Applies quantum optimization passes (like `CancelXPass`)
+  - Outputs both original and optimized MLIR
+- **Test Files**: Each `.mlir` file in `test/Dialect/Quantum/` contains:
+  - `RUN:` lines that specify how to run the test
+  - `CHECK:` patterns that verify expected output
+  - Example: `RUN: test-quantum-dialect %s | FileCheck %s`
+
+### **[Python Bindings Documentation](../../../python/mlir/dialects/quantum/README.md)**
 - Circuit creation and MLIR generation
 - Python API reference and examples
 - Integration with optimization passes
@@ -128,15 +148,6 @@ print(module)
 # After optimization: H (consecutive X gates cancelled)
 ```
 
-## Integration Status
-
-- ✅ **Build System**: Fully integrated with MLIR's CMake build
-- ✅ **Dialect Registration**: Automatic registration with MLIR context
-- ✅ **Pass Framework**: Integrated with MLIR's pass manager
-- ✅ **Test Suite**: Comprehensive test coverage
-- ✅ **Python Bindings**: Full Python API support
-- ✅ **Documentation**: Complete usage and API documentation
-
 ## Distribution
 
 ### For Core Dialect Usage
@@ -169,6 +180,29 @@ When extending the quantum dialect:
 3. **Update tests**: Add test cases in `test/Dialect/Quantum/`
 4. **Update Python bindings**: Extend the Python API as needed
 5. **Update documentation**: Keep README files current
+
+### Writing Tests
+
+Test files in `test/Dialect/Quantum/` follow the LLVM lit testing format:
+
+```mlir
+// RUN: test-quantum-dialect %s | FileCheck %s
+
+module {
+  func.func @my_test() {
+    // CHECK: quantum.alloc
+    %q = "quantum.alloc"() : () -> i32
+    // CHECK: quantum.x
+    "quantum.x"(%q) : (i32) -> ()
+    return
+  }
+}
+```
+
+- **`RUN:` lines** specify the command to execute
+- **`CHECK:` patterns** verify the expected output
+- Use `%s` to refer to the current test file
+- Run specific tests: `ninja -C build check-mlir-dialect-quantum`
 
 ## License
 
