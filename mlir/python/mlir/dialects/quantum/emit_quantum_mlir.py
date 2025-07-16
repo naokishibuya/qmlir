@@ -1,42 +1,52 @@
 """
 Translate a toy Python circuit into our Quantum Dialect MLIR using the official
-MLIR Python bindings.  No string‑splicing — we build IR programmatically.
+MLIR Python bindings.  No string-splicing — we build IR programmatically.
 
 Usage:
-  python python/emit_quantum_mlir.py | ./build/bin/test-quantum-dialect
-  python python/emit_quantum_mlir.py > test.mlir && mlir-opt test.mlir --quantum-cancel-x
+  python3 mlir/python/mlir/dialects/quantum/emit_quantum_mlir.py | ./build/bin/test-quantum-dialect
+  python3 mlir/python/mlir/dialects/quantum/emit_quantum_mlir.py > test.mlir
 
-If you compiled with `-DMLIR_ENABLE_BINDINGS_PYTHON=ON` and installed the
-wheel, this will work *out of the box*.  Otherwise, make sure the wheel is on
-`PYTHONPATH` and that `libMLIRQuantum` is pre‑loaded (see README notes).
+This script automatically detects the MLIR Python bindings built with 
+-DMLIR_ENABLE_BINDINGS_PYTHON=ON and works standalone without requiring
+additional setup.
 """
 
-from mlir import ir
-import ctypes
 import os
-import platform
+import sys
 
+# Auto-detect the MLIR Python bindings path
+def setup_mlir_path():
+    """Automatically add MLIR Python bindings to sys.path"""
+    # Get the directory containing this script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Navigate up to the llvm-project root and find the build directory
+    current = script_dir
+    while current != '/':
+        build_dir = os.path.join(current, 'build')
+        mlir_python_path = os.path.join(build_dir, 'tools', 'mlir', 'python_packages', 'mlir_core')
+        
+        if os.path.exists(mlir_python_path):
+            if mlir_python_path not in sys.path:
+                sys.path.insert(0, mlir_python_path)
+            return mlir_python_path
+        
+        current = os.path.dirname(current)
+    
+    # Fallback: try environment variable
+    pythonpath = os.environ.get('PYTHONPATH', '')
+    for path in pythonpath.split(':'):
+        if 'mlir_core' in path and os.path.exists(path):
+            return path
+    
+    raise RuntimeError("Could not find MLIR Python bindings. Please ensure the build was configured with -DMLIR_ENABLE_BINDINGS_PYTHON=ON")
 
-# -----------------------------------------------------------------------------
-# Load our Quantum plugin so the dialect & pass register with the global tables
-# -----------------------------------------------------------------------------
-lib_name = {
-    "Darwin": "libMLIRQuantum.dylib",
-    "Windows": "MLIRQuantum.dll", 
-}.get(platform.system(), "libMLIRQuantum.so")
+# Setup the path before importing MLIR
+setup_mlir_path()
 
-try:
-    ctypes.CDLL(lib_name)  # Rely on system ld search paths
-except OSError:
-    # Fallback: look in build/lib directory
-    here = os.path.abspath(os.path.dirname(__file__))
-    candidate = os.path.join(here, "..", "build", "lib", lib_name)
-    try:
-        ctypes.CDLL(candidate)
-    except OSError:
-        # Another fallback: look in standard lib directory
-        candidate = os.path.join(here, "..", "lib", lib_name)
-        ctypes.CDLL(candidate)
+from mlir import ir
+# Note: The quantum dialect is built into the MLIR Python bindings
+# No need to load external libraries via ctypes
 
 
 # -----------------------------------------------------------------------------
