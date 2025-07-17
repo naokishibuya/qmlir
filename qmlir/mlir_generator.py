@@ -20,6 +20,13 @@ def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str
     Returns:
         MLIR string representation of the circuit
     """
+    # Phase 1: Collect unique parameters using simplified approach
+    param_index_map = {}
+    for gate in circuit.gates:
+        for param in gate.parameters:
+            if param.id not in param_index_map:
+                param_index_map[param.id] = len(param_index_map)
+
     with ir.Context() as ctx, ir.Location.unknown():
         # Allow unregistered dialects for now
         ctx.allow_unregistered_dialects = True
@@ -27,8 +34,10 @@ def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str
 
         module = ir.Module.create()
         with ir.InsertionPoint(module.body):
-            # Create function type: () -> ()
-            func_type = ir.FunctionType.get([], [])
+            # Create function type with parameters
+            f64_type = ir.F64Type.get()
+            func_args = [f64_type] * len(param_index_map)
+            func_type = ir.FunctionType.get(func_args, [])
 
             # Create function using lower-level API
             func_op = ir.Operation.create(
@@ -42,6 +51,10 @@ def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str
 
             # Get the function body
             func_body = func_op.regions[0].blocks.append()
+
+            # Add function arguments to the block
+            for _ in range(len(param_index_map)):
+                func_body.add_argument(f64_type, ir.Location.unknown())
 
             with ir.InsertionPoint(func_body):
                 # Allocate qubits on demand
@@ -71,6 +84,20 @@ def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str
                         ir.Operation.create(
                             "quantum.cx", operands=[get_ssa(gate.q[0]), get_ssa(gate.q[1])], attributes={}
                         )
+                    # Parametric gates (Phase 1: stub implementation)
+                    elif gate.name == "rx":
+                        param_idx = param_index_map[gate.parameters[0].id]
+                        param_value = func_body.arguments[param_idx]
+                        # For now, generate a placeholder comment
+                        ir.Operation.create("quantum.rx", operands=[get_ssa(gate.q[0]), param_value], attributes={})
+                    elif gate.name == "ry":
+                        param_idx = param_index_map[gate.parameters[0].id]
+                        param_value = func_body.arguments[param_idx]
+                        ir.Operation.create("quantum.ry", operands=[get_ssa(gate.q[0]), param_value], attributes={})
+                    elif gate.name == "rz":
+                        param_idx = param_index_map[gate.parameters[0].id]
+                        param_value = func_body.arguments[param_idx]
+                        ir.Operation.create("quantum.rz", operands=[get_ssa(gate.q[0]), param_value], attributes={})
                     else:
                         raise ValueError(f"Unknown gate: {gate.name}")
 

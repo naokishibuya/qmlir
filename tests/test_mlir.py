@@ -1,6 +1,6 @@
 """Test MLIR code generation functionality."""
 
-from qmlir import QuantumCircuit, circuit_to_mlir
+from qmlir import QuantumCircuit, Parameter, circuit_to_mlir
 
 
 class TestMLIRGeneration:
@@ -124,3 +124,129 @@ class TestMLIRValidation:
         assert "%0 = " in mlir_code
         assert "%1 = " in mlir_code
         assert "%2 = " in mlir_code
+
+
+class TestParametricMLIRGeneration:
+    """Test MLIR code generation for parametric circuits."""
+
+    def test_basic_parametric_mlir(self):
+        """Test basic parametric circuit MLIR generation."""
+        circuit = QuantumCircuit(2)
+        theta = Parameter(1.57, "theta")
+        phi = Parameter(0.785, "phi")
+
+        # Create a simple parametric circuit
+        circuit.rx(0, theta)
+        circuit.ry(1, phi)
+        circuit.h(0)
+
+        mlir_code = circuit_to_mlir(circuit, "test_parametric")
+
+        # Check function has parameters
+        assert "test_parametric(" in mlir_code
+        assert "f64" in mlir_code  # Should have f64 parameters
+        assert "%arg0: f64" in mlir_code
+        assert "%arg1: f64" in mlir_code
+
+        # Check parametric gates are generated
+        assert '"quantum.rx"(' in mlir_code
+        assert '"quantum.ry"(' in mlir_code
+        assert '"quantum.h"(' in mlir_code
+
+        # Check parameter usage
+        assert "%arg0" in mlir_code
+        assert "%arg1" in mlir_code
+
+    def test_parameter_reuse_mlir(self):
+        """Test parameter reuse in MLIR generation."""
+        circuit = QuantumCircuit(2)
+        theta = Parameter(1.57, "theta")
+
+        # Reuse the same parameter
+        circuit.rx(0, theta)
+        circuit.rz(1, theta)
+
+        mlir_code = circuit_to_mlir(circuit, "test_reuse")
+
+        # Should have only one f64 parameter since theta is reused
+        signature_line = [line for line in mlir_code.split("\n") if "test_reuse" in line and "func.func" in line][0]
+        f64_count = signature_line.count("f64")
+        assert f64_count == 1, f"Expected 1 f64 parameter, got {f64_count}"
+
+        # Both gates should use the same argument
+        assert '"quantum.rx"(' in mlir_code
+        assert '"quantum.rz"(' in mlir_code
+        assert mlir_code.count("%arg0") >= 2  # Used in both gates
+
+    def test_no_parameters_mlir(self):
+        """Test that non-parametric circuits still work."""
+        circuit = QuantumCircuit(2)
+        circuit.h(0)
+        circuit.cx(0, 1)
+
+        mlir_code = circuit_to_mlir(circuit, "test_no_params")
+
+        # Should have no parameters
+        assert "test_no_params()" in mlir_code
+        assert "f64" not in mlir_code  # No f64 parameters
+        assert "%arg" not in mlir_code  # No arguments
+
+        # Should still generate gates correctly
+        assert '"quantum.h"(' in mlir_code
+        assert '"quantum.cx"(' in mlir_code
+
+    def test_mixed_parametric_and_non_parametric_mlir(self):
+        """Test mixed parametric and non-parametric gates."""
+        circuit = QuantumCircuit(3)
+        theta = Parameter(1.57, "theta")
+
+        # Mix of parametric and non-parametric gates
+        circuit.h(0)
+        circuit.rx(1, theta)
+        circuit.cx(0, 1)
+        circuit.ry(2, theta)  # Reuse parameter
+        circuit.z(2)
+
+        mlir_code = circuit_to_mlir(circuit, "test_mixed")
+
+        # Should have one parameter (theta)
+        assert "test_mixed(%arg0: f64)" in mlir_code
+
+        # Should have all gate types
+        assert '"quantum.h"(' in mlir_code
+        assert '"quantum.rx"(' in mlir_code
+        assert '"quantum.cx"(' in mlir_code
+        assert '"quantum.ry"(' in mlir_code
+        assert '"quantum.z"(' in mlir_code
+
+        # Parameter should be used in rx and ry gates
+        rx_and_ry_count = mlir_code.count("%arg0")
+        assert rx_and_ry_count >= 2  # Used in both rx and ry gates
+
+    def test_multiple_unique_parameters_mlir(self):
+        """Test multiple unique parameters generate correct function signature."""
+        circuit = QuantumCircuit(4)
+        theta = Parameter(1.57, "theta")
+        phi = Parameter(0.785, "phi")
+        omega = Parameter(3.14, "omega")
+
+        # Use all three parameters
+        circuit.rx(0, theta)
+        circuit.ry(1, phi)
+        circuit.rz(2, omega)
+        circuit.rx(3, theta)  # Reuse theta
+
+        mlir_code = circuit_to_mlir(circuit, "test_multi_params")
+
+        # Should have three parameters
+        assert "test_multi_params(%arg0: f64, %arg1: f64, %arg2: f64)" in mlir_code
+
+        # Should use all three arguments
+        assert "%arg0" in mlir_code  # theta
+        assert "%arg1" in mlir_code  # phi
+        assert "%arg2" in mlir_code  # omega
+
+        # Should have correct gate types
+        assert '"quantum.rx"(' in mlir_code
+        assert '"quantum.ry"(' in mlir_code
+        assert '"quantum.rz"(' in mlir_code

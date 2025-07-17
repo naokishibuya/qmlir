@@ -5,6 +5,7 @@ before they are compiled to MLIR.
 """
 
 from typing import List
+from .parameter import Parameter
 
 
 AVAILABLE_QUANTUM_GATES = {
@@ -14,26 +15,35 @@ AVAILABLE_QUANTUM_GATES = {
     "z": "Pauli-Z",
     "h": "Hadamard",
     "cx": "CNOT",
+    "rx": "Rotation-X",
+    "ry": "Rotation-Y",
+    "rz": "Rotation-Z",
 }
 
 
 class QuantumGate:
     """Represents a quantum gate operation."""
 
-    def __init__(self, name: str, *qubits: int):
+    def __init__(self, name: str, *qubits: int, parameters: List[Parameter] = None):
         """Initialize a quantum gate.
 
         Args:
-            name: The name of the gate (e.g., 'x', 'h', 'cx')
+            name: The name of the gate (e.g., 'x', 'h', 'cx', 'rx')
             *qubits: The qubit indices this gate operates on
+            parameters: List of Parameter objects for parametric gates
         """
         assert name in AVAILABLE_QUANTUM_GATES, f"Unknown gate: {name}"
 
         self.name = name
         self.q = qubits
+        self.parameters = parameters or []
 
     def __repr__(self) -> str:
-        return f"Gate({self.name}, {', '.join(map(str, self.q))})"
+        if self.parameters:
+            param_str = ", ".join(str(p) for p in self.parameters)
+            return f"Gate({self.name}, {', '.join(map(str, self.q))}, [{param_str}])"
+        else:
+            return f"Gate({self.name}, {', '.join(map(str, self.q))})"
 
 
 class QuantumCircuit:
@@ -140,6 +150,48 @@ class QuantumCircuit:
         if control == target:
             raise ValueError("Control and target qubits cannot be the same")
         self.gates.append(QuantumGate("cx", control, target))
+        return self
+
+    def rx(self, qubit: int, parameter: Parameter) -> "QuantumCircuit":
+        """Add a rotation-X gate to the circuit.
+
+        Args:
+            qubit: The qubit index to apply the gate to
+            parameter: The rotation angle parameter
+
+        Returns:
+            Self for method chaining
+        """
+        self._validate_qubit(qubit)
+        self.gates.append(QuantumGate("rx", qubit, parameters=[parameter]))
+        return self
+
+    def ry(self, qubit: int, parameter: Parameter) -> "QuantumCircuit":
+        """Add a rotation-Y gate to the circuit.
+
+        Args:
+            qubit: The qubit index to apply the gate to
+            parameter: The rotation angle parameter
+
+        Returns:
+            Self for method chaining
+        """
+        self._validate_qubit(qubit)
+        self.gates.append(QuantumGate("ry", qubit, parameters=[parameter]))
+        return self
+
+    def rz(self, qubit: int, parameter: Parameter) -> "QuantumCircuit":
+        """Add a rotation-Z gate to the circuit.
+
+        Args:
+            qubit: The qubit index to apply the gate to
+            parameter: The rotation angle parameter
+
+        Returns:
+            Self for method chaining
+        """
+        self._validate_qubit(qubit)
+        self.gates.append(QuantumGate("rz", qubit, parameters=[parameter]))
         return self
 
     def __repr__(self) -> str:
