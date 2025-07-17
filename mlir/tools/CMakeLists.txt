@@ -7,13 +7,9 @@ add_executable(quantum-opt
 llvm_update_compile_flags(quantum-opt)
 
 target_link_libraries(quantum-opt PRIVATE
-  MLIRQuantumDialect
   MLIRQuantumPasses
-  MLIRIR
   MLIROptLib
   MLIRParser
-  MLIRPass
-  MLIRSupport
   ${llvm_libs}
 )
 
