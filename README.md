@@ -14,8 +14,8 @@ A quantum computing dialect experiment for MLIR with gate cancellation optimizat
 **1. Clone the Repository:**
 
 ```bash
-git clone https://github.com/naokishibuya/quantum-compiler.git
-cd quantum-compiler
+git clone https://github.com/naokishibuya/qmlir.git
+cd qmlir
 ```
 
 **2. Setup Python Environment:**
@@ -79,7 +79,7 @@ ninja
 Go back to the quantum compiler project root and build the quantum dialect:
 
 ```bash
-cd ../../quantum-compiler
+cd ../../qmlir
 mkdir build
 cd build
 cmake -G Ninja ..
@@ -91,7 +91,7 @@ ninja
 For development, install the QMLIR package in editable mode:
 
 ```bash
-cd ..  # quantum-compiler root
+cd ..  # qmlir root
 pip install -e .
 ```
 
