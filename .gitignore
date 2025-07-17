@@ -48,5 +48,6 @@ build/
 */build/
 
 # Python 
+venv/
 *.egg-info/
 __pycache__/

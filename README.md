@@ -57,14 +57,6 @@ cmake -G Ninja ../llvm \
 ninja
 ```
 
-Build MLIR Python bindings (but don't install them to venv):
-
-```bash
-ninja MLIRPythonModules
-```
-
-**Important**: Do NOT run `ninja install` or `ninja install-MLIRPythonModules` as this will copy many files to your venv, which is not needed for development. The quantum compiler will find the MLIR Python bindings automatically from the LLVM build directory at `build/tools/mlir/python_packages/`.
-
 **4. Build Quantum Dialect:**
 
 Go back to the quantum compiler project root and build the quantum dialect:
@@ -122,7 +114,7 @@ module {
 Test the Python library:
 
 ```bash
-python -c "from qmlir import Circuit; c = Circuit(); c.h(0).cx(0,1); print('QMLIR working!')"
+python -c 'from qmlir import Circuit; c = Circuit(); c.h(0).cx(0,1); print("QMLIR working!")'
 ```
 
 ## Testing
@@ -138,73 +130,13 @@ At the project root, run:
 
 **2. QMLIR Python Library:**
 
-Run the examples for the QMLIR Python library:
-
-```bash
-python examples/bell_state.py
-python examples/double_x_test.py
-```
-
 Run unit tests (from project root)
 
 ```bash
-python -m pytest tests/ -v
+pytest
 ```
 
-
-Note: The QMLIR library automatically finds MLIR Python bindings in:
-1. `../llvm-project/build/tools/mlir/python_packages/mlir_core` (primary location after LLVM build)
-2. `build/python_packages/mlir_core` (fallback for older build layouts)
-3. `$MLIR_PYTHON_PACKAGES/mlir_core` (if environment variable is set)
-
-## Examples
-
-### Simple Circuit
-
-```python
-from qmlir import Circuit, circuit_to_mlir
-
-circuit = Circuit()
-circuit.h(0)  # Hadamard gate on qubit 0
-circuit.cx(0, 1)  # CNOT gate
-circuit.measure(0, 0)  # Measure qubit 0 into classical bit 0
-
-print(circuit_to_mlir(circuit))
-```
-
-### Bell State Generation
-
-```python
-from qmlir import Circuit, circuit_to_mlir
-
-# Create a Bell state |00⟩ + |11⟩
-circuit = Circuit()
-circuit.h(0)
-circuit.cx(0, 1)
-
-# Generate MLIR
-mlir_code = circuit_to_mlir(circuit)
-print(mlir_code)
-```
-
-See `examples/` directory for more complete examples.
-
-### Running Tests
-
-```bash
-# Run all tests
-pytest tests/
-
-# Run specific test files
-pytest tests/test_circuit.py -v
-pytest tests/test_mlir.py -v
-pytest tests/test_integration.py -v
-```
-
-This will run 21 unit tests covering:
-- Circuit construction and gate operations
-- MLIR code generation and formatting
-- Quantum pass integration with quantum-opt
+See `examples/` directory for Python examples.
 
 ## Development
 
@@ -226,7 +158,7 @@ This will run 21 unit tests covering:
 
 **4. Development Workflow:**
 - All changes are automatically reflected due to `pip install -e .`
-- Run tests frequently with `pytest tests/`
+- Run tests frequently with `pytest`
 - Use `examples/` for interactive development
 - Test integration with `quantum-opt` tool
 
@@ -238,9 +170,3 @@ The quantum compiler follows a layered architecture:
 2. **Python Frontend** (`qmlir/`): High-level circuit construction API
 3. **Integration Layer** (`tests/`, `examples/`): Testing and demonstrations
 4. **Build System** (`CMakeLists.txt`, `pyproject.toml`): Development and packaging
-
-This separation allows for:
-- Independent development of MLIR dialect and Python frontend
-- Easy testing and validation at each layer
-- Professional packaging and distribution
-- Extension to other frontends (C++, Rust, etc.)
