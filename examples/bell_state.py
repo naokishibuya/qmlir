@@ -1,6 +1,6 @@
 """Bell state circuit - basic example."""
 
-from qmlir import Circuit
+from qmlir import Circuit, circuit_to_mlir
 
 
 def main():
@@ -11,10 +11,13 @@ def main():
     circuit.cx(0, 1)  # CNOT from qubit 0 to qubit 1
 
     print("Bell State Circuit:")
-    print(f"Gates: {circuit.gates}")
-    print()
-    print("MLIR representation:")
     print(circuit)
+    print()
+
+    mlir_code = circuit_to_mlir(circuit, "bell_state")
+
+    print("MLIR representation:")
+    print(mlir_code)
 
 
 if __name__ == "__main__":

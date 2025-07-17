@@ -72,25 +72,3 @@ def circuit_to_mlir(circuit: Circuit, function_name: str = "main") -> str:
                 ir.Operation.create("func.return", operands=[], attributes={})
 
         return str(module)
-
-
-def generate_bell_state() -> str:
-    """Generate MLIR for a Bell state circuit.
-
-    Returns:
-        MLIR string representation of the Bell state circuit
-    """
-    circuit = Circuit()
-    circuit.h(0).cx(0, 1)
-    return circuit_to_mlir(circuit, "bell_state")
-
-
-def generate_double_x_test() -> str:
-    """Generate MLIR for a double X gate test circuit.
-
-    Returns:
-        MLIR string representation of the double X test circuit
-    """
-    circuit = Circuit()
-    circuit.x(0).x(0)
-    return circuit_to_mlir(circuit, "double_x_test")

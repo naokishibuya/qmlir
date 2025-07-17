@@ -125,30 +125,6 @@ Test the Python library:
 python -c "from qmlir import Circuit; c = Circuit(); c.h(0).cx(0,1); print('QMLIR working!')"
 ```
 
-## Installation for Users
-
-For users who want to install the quantum compiler:
-
-```bash
-# Install from source
-git clone https://github.com/naokishibuya/quantum-compiler.git
-cd quantum-compiler
-pip install .
-```
-
-Or:
-
-```bash
-# Install directly from GitHub
-pip install git+https://github.com/naokishibuya/quantum-compiler.git
-```
-
-This installs:
-- `qmlir` Python package
-- `qmlir-opt` command-line tool (optional)
-
-**Note**: Users need to have LLVM/MLIR with Python bindings installed separately.
-
 ## Testing
 
 **1. Run MLIR tests:**
@@ -162,23 +138,19 @@ At the project root, run:
 
 **2. QMLIR Python Library:**
 
-The quantum compiler includes QMLIR, a Python library for building quantum circuits:
+Run the examples for the QMLIR Python library:
 
 ```bash
-# Set up the environment
-source venv/bin/activate
-
-# Run demonstrations
-python examples/demo_bell_state.py
-python examples/demo_double_x.py
-
-# Run unit tests (from project root)
-python -m pytest tests/ -v
-
-# Pipe to quantum-opt for processing
-python examples/demo_bell_state.py | build/mlir/tools/quantum-opt
-python examples/demo_double_x.py | build/mlir/tools/quantum-opt --quantum-cancel-x
+python examples/bell_state.py
+python examples/double_x_test.py
 ```
+
+Run unit tests (from project root)
+
+```bash
+python -m pytest tests/ -v
+```
+
 
 Note: The QMLIR library automatically finds MLIR Python bindings in:
 1. `../llvm-project/build/tools/mlir/python_packages/mlir_core` (primary location after LLVM build)
@@ -190,30 +162,29 @@ Note: The QMLIR library automatically finds MLIR Python bindings in:
 ### Simple Circuit
 
 ```python
-from qmlir import Circuit
+from qmlir import Circuit, circuit_to_mlir
 
 circuit = Circuit()
 circuit.h(0)  # Hadamard gate on qubit 0
 circuit.cx(0, 1)  # CNOT gate
 circuit.measure(0, 0)  # Measure qubit 0 into classical bit 0
 
-print(circuit.to_mlir())
+print(circuit_to_mlir(circuit))
 ```
 
 ### Bell State Generation
 
 ```python
-from qmlir import Circuit
+from qmlir import Circuit, circuit_to_mlir
 
 # Create a Bell state |00⟩ + |11⟩
 circuit = Circuit()
 circuit.h(0)
 circuit.cx(0, 1)
 
-# Generate MLIR and optimize
-mlir_code = circuit.to_mlir()
-optimized = circuit.optimize(mlir_code)
-print(optimized)
+# Generate MLIR
+mlir_code = circuit_to_mlir(circuit)
+print(mlir_code)
 ```
 
 See `examples/` directory for more complete examples.

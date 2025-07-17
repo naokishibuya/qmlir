@@ -1,6 +1,6 @@
 """Test MLIR code generation functionality."""
 
-from qmlir import Circuit, circuit_to_mlir, generate_bell_state, generate_double_x_test
+from qmlir import Circuit, circuit_to_mlir
 
 
 class TestMLIRGeneration:
@@ -87,21 +87,6 @@ class TestMLIRGeneration:
         mlir_code = circuit_to_mlir(circuit, "my_custom_function")
 
         assert "func.func @my_custom_function()" in mlir_code
-
-    def test_generate_bell_state_utility(self):
-        """Test the generate_bell_state utility function."""
-        mlir_code = generate_bell_state()
-
-        assert "func.func @bell_state()" in mlir_code
-        assert '"quantum.h"(' in mlir_code
-        assert '"quantum.cx"(' in mlir_code
-
-    def test_generate_double_x_test_utility(self):
-        """Test the generate_double_x_test utility function."""
-        mlir_code = generate_double_x_test()
-
-        assert "func.func @double_x_test()" in mlir_code
-        assert mlir_code.count('"quantum.x"(') == 2
 
 
 class TestMLIRValidation:

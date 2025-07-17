@@ -1,6 +1,8 @@
 """Double X gate test - demonstrates gate cancellation."""
 
-from qmlir import Circuit
+import subprocess
+from qmlir import Circuit, circuit_to_mlir
+from qmlir.config import get_quantum_opt_path
 
 
 def main():
@@ -19,15 +21,32 @@ def main():
     circuit.h(0)
 
     print("Double X Gate Test Circuit:")
-    print(f"Gates: {circuit.gates}")
+    print(circuit.gates)
     print()
-    print("MLIR representation:")
-    print(circuit.to_mlir())
+
+    # Generate MLIR
+    mlir_code = circuit_to_mlir(circuit, "double_x_test")
+
+    print("Original MLIR:")
+    print(mlir_code)
     print()
-    print("To test gate cancellation:")
-    print("python examples/double_x_test.py | build/mlir/tools/quantum-opt --quantum-cancel-x")
-    print()
-    print("Expected result: The two X gates should be removed, leaving only H gates.")
+
+    # Run optimization
+    try:
+        quantum_opt_path = get_quantum_opt_path()
+        result = subprocess.run(
+            [quantum_opt_path, "--quantum-cancel-x"], input=mlir_code, capture_output=True, text=True, timeout=10
+        )
+
+        if result.returncode == 0:
+            print("Optimized MLIR (X gates cancelled):")
+            print(result.stdout.strip())
+        else:
+            print(f"Optimization failed: {result.stderr}")
+    except Exception as e:
+        print(f"Error running optimization: {e}")
+        print("To manually test optimization:")
+        print("python examples/double_x_test.py | build/mlir/tools/quantum-opt --quantum-cancel-x")
 
 
 if __name__ == "__main__":
