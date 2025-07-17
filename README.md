@@ -1,6 +1,6 @@
 # Quantum MLIR Dialect
 
-A standalone quantum computing dialect for MLIR with gate cancellation optimization.
+A quantum computing dialect experiment for MLIR with gate cancellation optimization.
 
 ## Features
 
@@ -10,7 +10,14 @@ A standalone quantum computing dialect for MLIR with gate cancellation optimizat
 
 ## Quick Start
 
-**1. Setup Python Environment:**
+**1. Clone the Repository:**
+
+```bash
+git clone https://github.com/naokishibuya/quantum-compiler.git
+cd quantum-compiler
+```
+
+**2. Setup Python Environment:**
 
 ```bash
 python3 -m venv venv
@@ -18,9 +25,12 @@ source venv/bin/activate
 pip install --upgrade pip
 ```
 
-**1. Build LLVM/MLIR:**
+**3. Build LLVM/MLIR:**
+
+At the project sibling directory, clone llvm-project:
 
 ```bash
+cd ..
 git clone https://github.com/llvm/llvm-project.git
 cd llvm-project
 ```
@@ -51,22 +61,24 @@ Install MLIR Python bindings:
 ninja install-MLIRPythonModules
 ```
 
-**2. Build Quantum Dialect:**
+**4. Build Quantum Dialect:**
+
+Go back to the quantum compiler project root and build the quantum dialect:
 
 ```bash
-git clone https://github.com/naokishibuya/quantum-compiler.git
-cd quantum-compiler
+cd ../quantum-compiler
 mkdir build
 cd build
 cmake -G Ninja ..
 ninja
 ```
 
-**3. Verification:**
+**5. Verification:**
 
 At the project root, run:
 
 ```bash
+cd ..  # quantum-compiler root
 echo 'module {
   func.func @test() {
     %q = "quantum.alloc"() : () -> i32
@@ -91,7 +103,7 @@ module {
 
 ## Testing
 
-**Run MLIR tests:**
+**1. Run MLIR tests:**
 
 At the project root, run:
 
@@ -100,7 +112,7 @@ At the project root, run:
 ./build/mlir/tools/quantum-opt mlir/test/Dialect/Quantum/bell_state.mlir --verify-diagnostics
 ```
 
-**Python bindings:**
+**2. Python bindings:**
 
 At the project root, run:
 
@@ -112,13 +124,13 @@ python mlir/python/mlir/dialects/quantum/emit_quantum_mlir.py build/mlir/tools/q
 
 ## Development
 
-**Add Operations:**
+**1. Add Operations:**
 
 - Edit `QuantumOps.td`
 - Implement in `QuantumOps.cpp`
 - Add tests
 
-**Add Passes:**
+**2. Add Passes:**
 - Edit `Passes.td`
 - Implement in `Passes/`
 - Register in `QuantumPasses.h`
