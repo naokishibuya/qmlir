@@ -14,33 +14,20 @@ def setup_mlir_path():
     # Get the project root directory
     project_root = Path(__file__).parent.parent
 
-    # Try multiple possible locations for MLIR Python bindings
-    possible_paths = [
-        # From LLVM build directory (primary location after ninja MLIRPythonModules)
-        project_root / ".." / "llvm-project" / "build" / "tools" / "mlir" / "python_packages" / "mlir_core",
-        # From our build directory (copied from LLVM install - legacy)
-        project_root / "build" / "python_packages" / "mlir_core",
-        # From LLVM install directory (if someone did ninja install)
-        project_root / ".." / "llvm-project" / "install" / "python_packages" / "mlir_core",
-        # From environment variable
-        Path(os.environ.get("MLIR_PYTHON_PACKAGES", "")) / "mlir_core"
-        if os.environ.get("MLIR_PYTHON_PACKAGES")
-        else None,
-        # From external LLVM build (if separate)
-        project_root / "llvm-project" / "build" / "tools" / "mlir" / "python_packages" / "mlir_core",
-        # Legacy fallback to venv
-        project_root / "venv" / "python_packages" / "mlir_core",
-    ]
-
-    # Filter out None values
-    possible_paths = [path for path in possible_paths if path is not None]
-
-    for mlir_path in possible_paths:
+    # Check environment variable first
+    if os.environ.get("MLIR_PYTHON_PACKAGES"):
+        mlir_path = Path(os.environ["MLIR_PYTHON_PACKAGES"]) / "mlir_core"
         if mlir_path.exists():
             sys.path.insert(0, str(mlir_path))
             return
 
-    raise RuntimeError(f"MLIR Python bindings not found in any of: {possible_paths}")
+    # Default to LLVM build directory
+    mlir_path = project_root / ".." / "llvm-project" / "build" / "tools" / "mlir" / "python_packages" / "mlir_core"
+    if mlir_path.exists():
+        sys.path.insert(0, str(mlir_path))
+        return
+
+    raise RuntimeError(f"MLIR Python bindings not found at: {mlir_path}")
 
 
 def get_quantum_opt_path():

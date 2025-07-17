@@ -95,11 +95,7 @@ cd ..  # quantum-compiler root
 pip install -e .
 ```
 
-This makes the `qmlir` package available in your venv. The package automatically finds:
-- MLIR Python bindings from the LLVM build directory
-- The `quantum-opt` executable from the quantum dialect build
-
-**Note**: The `qmlir/config.py` module handles automatic discovery of MLIR dependencies, so you don't need to set up paths manually.
+This makes the `qmlir` package available in your venv, automatically discovering MLIR Python bindings from `../llvm-project/build/tools/mlir/python_packages/mlir_core` (or `MLIR_PYTHON_PACKAGES` environment variable) and the `quantum-opt` executable from the local build.
 
 **7. Verification:**
 
