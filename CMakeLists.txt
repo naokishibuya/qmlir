@@ -33,19 +33,19 @@ include(HandleLLVMOptions)
 # Include the necessary directories
 include_directories(${LLVM_INCLUDE_DIRS})
 include_directories(${MLIR_INCLUDE_DIRS})
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/mlir/include)
-include_directories(${CMAKE_CURRENT_BINARY_DIR}/mlir/include)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/backend/include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR}/backend/include)
 
 # Add compile definitions
 add_definitions(${LLVM_DEFINITIONS})
 
 # Configure the header to pass some CMake settings to the source code
 configure_file(
-  ${CMAKE_CURRENT_SOURCE_DIR}/mlir/include/mlir/Dialect/Quantum/IR/QuantumConfig.h.in
-  ${CMAKE_CURRENT_BINARY_DIR}/mlir/include/mlir/Dialect/Quantum/IR/QuantumConfig.h
+  ${CMAKE_CURRENT_SOURCE_DIR}/backend/include/mlir/Dialect/Quantum/IR/QuantumConfig.h.in
+  ${CMAKE_CURRENT_BINARY_DIR}/backend/include/mlir/Dialect/Quantum/IR/QuantumConfig.h
 )
 
 # Add component subdirectories
-add_subdirectory(mlir/include/mlir/Dialect/Quantum)
-add_subdirectory(mlir/lib/Dialect/Quantum)  
-add_subdirectory(mlir/tools)
+add_subdirectory(backend/include/mlir/Dialect/Quantum)
+add_subdirectory(backend/lib/Dialect/Quantum)  
+add_subdirectory(backend/tools)

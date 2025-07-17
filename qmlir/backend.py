@@ -41,7 +41,7 @@ def get_quantum_opt_path():
         RuntimeError: If quantum-opt is not found.
     """
     project_root = Path(__file__).parent.parent
-    quantum_opt = project_root / "build" / "mlir" / "tools" / "quantum-opt"
+    quantum_opt = project_root / "build" / "backend" / "tools" / "quantum-opt"
 
     if quantum_opt.exists():
         return str(quantum_opt)

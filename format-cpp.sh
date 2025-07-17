@@ -15,7 +15,7 @@ fi
 
 # Find all C++ files and format them
 find . -name "*.cpp" -o -name "*.h" -o -name "*.hpp" -o -name "*.c" -o -name "*.cc" | \
-  grep -E "(mlir/|qmlir/)" | \
+  grep -E "(backend/|qmlir/)" | \
   grep -v build/ | \
   xargs clang-format -i
 

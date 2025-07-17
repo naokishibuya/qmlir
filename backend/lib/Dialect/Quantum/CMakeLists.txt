@@ -4,8 +4,8 @@ add_mlir_dialect_library(MLIRQuantumDialect
   QuantumOps.cpp
 
   ADDITIONAL_HEADER_DIRS
-  ${PROJECT_SOURCE_DIR}/mlir/include/mlir/Dialect/Quantum
-  ${PROJECT_BINARY_DIR}/mlir/include/mlir/Dialect/Quantum
+  ${PROJECT_SOURCE_DIR}/backend/include/mlir/Dialect/Quantum
+  ${PROJECT_BINARY_DIR}/backend/include/mlir/Dialect/Quantum
 
   DEPENDS
   MLIRQuantumOpsIncGen
@@ -23,7 +23,7 @@ add_mlir_dialect_library(MLIRQuantumPasses
   Passes/QuantumCancelSelfInversePass.cpp
 
   ADDITIONAL_HEADER_DIRS
-  ${PROJECT_SOURCE_DIR}/mlir/include/mlir/Dialect/Quantum
+  ${PROJECT_SOURCE_DIR}/backend/include/mlir/Dialect/Quantum
 
   DEPENDS
   MLIRQuantumPassesIncGen
