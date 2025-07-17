@@ -1,6 +1,6 @@
 """Self-inverse gate cancellation test - demonstrates involutory gate optimization."""
 
-from qmlir import QuantumCircuit, circuit_to_mlir, run_quantum_optimizer
+from qmlir import QuantumCircuit, transpile
 
 
 def main():
@@ -23,23 +23,23 @@ def main():
     print(circuit.gates)
     print()
 
-    # Generate MLIR
-    mlir_code = circuit_to_mlir(circuit, "cancel_self_inverse_test")
+    # Generate original MLIR (no optimization)
+    original_mlir = transpile(circuit, optimization_level=0, function_name="cancel_self_inverse_test")
 
     print("Original MLIR:")
-    print(mlir_code)
+    print(original_mlir)
     print()
 
-    # Run optimization
-    result = run_quantum_optimizer(mlir_code, "--quantum-cancel-self-inverse")
-    if result.returncode == 0:
+    # Generate optimized MLIR
+    try:
+        optimized_mlir = transpile(circuit, optimization_level=1, function_name="cancel_self_inverse_test")
         print("Optimized MLIR (self-inverse gates cancelled):")
-        print(result.stdout.strip())
+        print(optimized_mlir.strip())
         print()
         print("Note: All self-inverse gates (X-X, Y-Y, Z-Z, H-H) are cancelled!")
         print("Only qubit allocations and non-cancelled gates remain - the circuit is fully optimized.")
-    else:
-        print(f"Optimization failed: {result.stderr}")
+    except RuntimeError as e:
+        print(f"Optimization failed: {e}")
 
 
 if __name__ == "__main__":

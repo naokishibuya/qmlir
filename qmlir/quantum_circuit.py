@@ -1,4 +1,4 @@
-"""Abstract Syntax Tree for Quantum Circuits
+"""Quantum Circuit Representation
 
 This module defines the data structures for representing quantum circuits
 before they are compiled to MLIR.

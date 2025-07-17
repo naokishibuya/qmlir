@@ -1,6 +1,7 @@
-"""Configuration for QMLIR library and tests.
+"""Backend Configuration and Optimization
 
-This module handles path setup and configuration for the QMLIR library.
+This module handles backend setup, configuration, and optimization
+for the QMLIR library.
 """
 
 import os

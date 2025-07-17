@@ -1,13 +1,13 @@
-"""Code generation for quantum circuits to MLIR.
+"""MLIR Code Generation for Quantum Circuits
 
-This module handles the conversion of quantum circuit AST to MLIR
+This module handles the conversion of quantum circuit representation to MLIR
 representation using the quantum dialect.
 """
 
-# Import config to set up MLIR path automatically
-from . import config  # noqa: F401
+# Import backend to set up MLIR path automatically
+from . import backend  # noqa: F401
 from mlir import ir
-from .ast import QuantumCircuit
+from .quantum_circuit import QuantumCircuit
 
 
 def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str:

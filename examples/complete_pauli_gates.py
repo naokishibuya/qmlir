@@ -9,8 +9,7 @@ Demonstrates all gates in the quantum compiler:
 - CX: Controlled-X (CNOT gate)
 """
 
-from qmlir import QuantumCircuit, circuit_to_mlir
-from qmlir.config import run_quantum_optimizer
+from qmlir import QuantumCircuit, transpile
 
 # Create a circuit with all gates (specify number of qubits)
 circuit = QuantumCircuit(3)
@@ -36,16 +35,15 @@ circuit.x(2)  # X (should cancel with previous)
 circuit.cx(0, 2)  # CX
 circuit.cx(0, 2)  # CX (should cancel with previous)
 
-mlir_code = circuit_to_mlir(circuit, "complete_pauli_gates")
-
 print("Complete Pauli Gate Set Example")
 print("=" * 40)
 print("Original circuit:")
 print(circuit)
 
 print("\nMLIR representation:")
-print(mlir_code)
+original_mlir = transpile(circuit, optimization_level=0, function_name="complete_pauli_gates")
+print(original_mlir)
 
 print("\nAfter optimization:")
-optimized = run_quantum_optimizer(mlir_code, "--quantum-cancel-self-inverse")
-print(optimized.stdout.strip())
+optimized_mlir = transpile(circuit, optimization_level=1, function_name="complete_pauli_gates")
+print(optimized_mlir.strip())
