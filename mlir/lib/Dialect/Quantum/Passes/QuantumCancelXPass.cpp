@@ -56,7 +56,7 @@ void CancelXPass::runOnOperation() {
   RewritePatternSet patterns(&getContext());
   patterns.add<CancelAdjacentXPattern>(&getContext());
   
-  if (failed(applyPatternsAndFoldGreedily(func, std::move(patterns)))) {
+  if (failed(applyPatternsGreedily(func, std::move(patterns)))) {
     signalPassFailure();
   }
 }

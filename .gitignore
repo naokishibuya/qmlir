@@ -42,3 +42,7 @@
 
 # debug information files
 *.dwo
+
+# Build directories
+build/
+*/build/

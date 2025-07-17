@@ -12,31 +12,6 @@ wheel, this will work *out of the box*.  Otherwise, make sure the wheel is on
 """
 
 from mlir import ir
-import ctypes
-import os
-import platform
-
-
-# -----------------------------------------------------------------------------
-# Load our Quantum plugin so the dialect & pass register with the global tables
-# -----------------------------------------------------------------------------
-lib_name = {
-    "Darwin": "libMLIRQuantum.dylib",
-    "Windows": "MLIRQuantum.dll", 
-}.get(platform.system(), "libMLIRQuantum.so")
-
-try:
-    ctypes.CDLL(lib_name)  # Rely on system ld search paths
-except OSError:
-    # Fallback: look in build/lib directory
-    here = os.path.abspath(os.path.dirname(__file__))
-    candidate = os.path.join(here, "..", "build", "lib", lib_name)
-    try:
-        ctypes.CDLL(candidate)
-    except OSError:
-        # Another fallback: look in standard lib directory
-        candidate = os.path.join(here, "..", "lib", lib_name)
-        ctypes.CDLL(candidate)
 
 
 # -----------------------------------------------------------------------------

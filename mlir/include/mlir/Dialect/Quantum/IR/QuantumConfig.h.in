@@ -1,0 +1,13 @@
+//===- QuantumConfig.h - Quantum dialect configuration -------*- C++ -*-===//
+//
+// Configuration header for Quantum dialect
+//
+//===----------------------------------------------------------------------===//
+
+#ifndef MLIR_DIALECT_QUANTUM_IR_QUANTUMCONFIG_H
+#define MLIR_DIALECT_QUANTUM_IR_QUANTUMCONFIG_H
+
+#define QUANTUM_DIALECT_VERSION_MAJOR @QuantumCompiler_VERSION_MAJOR@
+#define QUANTUM_DIALECT_VERSION_MINOR @QuantumCompiler_VERSION_MINOR@
+
+#endif // MLIR_DIALECT_QUANTUM_IR_QUANTUMCONFIG_H

@@ -1,18 +1,37 @@
-add_mlir_dialect_library(MLIRQuantum
+# Quantum dialect library
+add_mlir_dialect_library(MLIRQuantumDialect
   QuantumDialect.cpp
   QuantumOps.cpp
-  Passes/QuantumCancelXPass.cpp
 
   ADDITIONAL_HEADER_DIRS
-  ${MLIR_MAIN_INCLUDE_DIR}/mlir/Dialect/Quantum
+  ${PROJECT_SOURCE_DIR}/mlir/include/mlir/Dialect/Quantum
+  ${PROJECT_BINARY_DIR}/mlir/include/mlir/Dialect/Quantum
 
   DEPENDS
   MLIRQuantumOpsIncGen
+
+  LINK_LIBS PUBLIC
+  MLIRIR
+  MLIRFuncDialect
+  MLIRInferTypeOpInterface
+  MLIRSideEffectInterfaces
+  MLIRSupport
+)
+
+# Quantum passes library
+add_mlir_dialect_library(MLIRQuantumPasses
+  Passes/QuantumCancelXPass.cpp
+
+  ADDITIONAL_HEADER_DIRS
+  ${PROJECT_SOURCE_DIR}/mlir/include/mlir/Dialect/Quantum
+
+  DEPENDS
   MLIRQuantumPassesIncGen
 
   LINK_LIBS PUBLIC
   MLIRIR
   MLIRPass
   MLIRFuncDialect
+  MLIRQuantumDialect
   MLIRTransforms
 )
