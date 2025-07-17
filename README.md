@@ -141,6 +141,8 @@ At the project root, run:
 ./build/mlir/tools/quantum-opt mlir/test/Dialect/Quantum/bell_state.mlir --verify-diagnostics
 ```
 
+There are more examples in `examples/` directory.
+
 **2. QMLIR Python Library:**
 
 Run unit tests (from project root)

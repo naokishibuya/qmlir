@@ -36,8 +36,10 @@ def main():
         print("Optimized MLIR (self-inverse gates cancelled):")
         print(optimized_mlir.strip())
         print()
-        print("Note: All self-inverse gates (X-X, Y-Y, Z-Z, H-H) are cancelled!")
-        print("Only qubit allocations and non-cancelled gates remain - the circuit is fully optimized.")
+        print("Note: All self-inverse gates (X-X, Y-Y, Z-Z, H-H) are now cancelled!")
+        print("The optimization can cancel identical gates on the same qubit even when")
+        print("separated by operations on other qubits.")
+        print("Only qubit allocations remain - the circuit is fully optimized.")
     except RuntimeError as e:
         print(f"Optimization failed: {e}")
 
