@@ -14,7 +14,13 @@ AVAILABLE_QUANTUM_GATES = {
     "y": "Pauli-Y",
     "z": "Pauli-Z",
     "h": "Hadamard",
+    "s": "S gate (Phase)",
+    "t": "T gate (π/8)",
+    "sdg": "S-dagger",
+    "tdg": "T-dagger",
     "cx": "CNOT",
+    "cy": "Controlled-Y",
+    "cz": "Controlled-Z",
     "rx": "Rotation-X",
     "ry": "Rotation-Y",
     "rz": "Rotation-Z",
@@ -135,6 +141,58 @@ class QuantumCircuit:
         self.gates.append(QuantumGate("h", qubit))
         return self
 
+    def s(self, qubit: int) -> "QuantumCircuit":
+        """Add an S gate (phase gate) to the circuit.
+
+        Args:
+            qubit: The qubit index to apply the gate to
+
+        Returns:
+            Self for method chaining
+        """
+        self._validate_qubit(qubit)
+        self.gates.append(QuantumGate("s", qubit))
+        return self
+
+    def t(self, qubit: int) -> "QuantumCircuit":
+        """Add a T gate (π/8 gate) to the circuit.
+
+        Args:
+            qubit: The qubit index to apply the gate to
+
+        Returns:
+            Self for method chaining
+        """
+        self._validate_qubit(qubit)
+        self.gates.append(QuantumGate("t", qubit))
+        return self
+
+    def sdg(self, qubit: int) -> "QuantumCircuit":
+        """Add an S-dagger gate to the circuit.
+
+        Args:
+            qubit: The qubit index to apply the gate to
+
+        Returns:
+            Self for method chaining
+        """
+        self._validate_qubit(qubit)
+        self.gates.append(QuantumGate("sdg", qubit))
+        return self
+
+    def tdg(self, qubit: int) -> "QuantumCircuit":
+        """Add a T-dagger gate to the circuit.
+
+        Args:
+            qubit: The qubit index to apply the gate to
+
+        Returns:
+            Self for method chaining
+        """
+        self._validate_qubit(qubit)
+        self.gates.append(QuantumGate("tdg", qubit))
+        return self
+
     def cx(self, control: int, target: int) -> "QuantumCircuit":
         """Add a CNOT gate to the circuit.
 
@@ -150,6 +208,40 @@ class QuantumCircuit:
         if control == target:
             raise ValueError("Control and target qubits cannot be the same")
         self.gates.append(QuantumGate("cx", control, target))
+        return self
+
+    def cy(self, control: int, target: int) -> "QuantumCircuit":
+        """Add a controlled-Y gate to the circuit.
+
+        Args:
+            control: The control qubit index
+            target: The target qubit index
+
+        Returns:
+            Self for method chaining
+        """
+        self._validate_qubit(control)
+        self._validate_qubit(target)
+        if control == target:
+            raise ValueError("Control and target qubits cannot be the same")
+        self.gates.append(QuantumGate("cy", control, target))
+        return self
+
+    def cz(self, control: int, target: int) -> "QuantumCircuit":
+        """Add a controlled-Z gate to the circuit.
+
+        Args:
+            control: The control qubit index
+            target: The target qubit index
+
+        Returns:
+            Self for method chaining
+        """
+        self._validate_qubit(control)
+        self._validate_qubit(target)
+        if control == target:
+            raise ValueError("Control and target qubits cannot be the same")
+        self.gates.append(QuantumGate("cz", control, target))
         return self
 
     def rx(self, qubit: int, parameter: Parameter) -> "QuantumCircuit":

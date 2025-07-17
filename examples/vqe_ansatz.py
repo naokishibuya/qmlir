@@ -174,7 +174,7 @@ def layered_ansatz_example():
 
 def main():
     """Run all examples."""
-    print("QMLIR Phase 2 Parametric Circuits Examples")
+    print("Parametric Circuits Examples")
     print("=" * 50)
 
     # Run examples
@@ -182,14 +182,6 @@ def main():
     parametric_optimization_example()
     multi_parameter_example()
     layered_ansatz_example()
-
-    print("\n" + "=" * 50)
-    print("Phase 2 Complete!")
-    print("✓ Parametric gates (RX, RY, RZ) supported in MLIR dialect")
-    print("✓ Parameter deduplication and reuse working")
-    print("✓ Optimization passes correctly handle parametric gates")
-    print("✓ End-to-end transpilation with parametric circuits")
-    print("✓ Ready for VQE and other variational algorithms")
 
 
 if __name__ == "__main__":

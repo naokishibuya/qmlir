@@ -78,6 +78,42 @@ def Quantum_HOp : Quantum_Op<"h"> {
   let arguments = (ins AnyType:$qubit);
 }
 
+def Quantum_SOp : Quantum_Op<"s"> {
+  let summary = "S gate (Phase gate)";
+  let description = [{
+    Applies an S gate (phase gate) to a qubit.
+    S = [[1, 0], [0, i]] = RZ(π/2)
+  }];
+  let arguments = (ins AnyType:$qubit);
+}
+
+def Quantum_TOp : Quantum_Op<"t"> {
+  let summary = "T gate (π/8 gate)";
+  let description = [{
+    Applies a T gate (π/8 gate) to a qubit.
+    T = [[1, 0], [0, e^(iπ/4)]] = RZ(π/4)
+  }];
+  let arguments = (ins AnyType:$qubit);
+}
+
+def Quantum_SdgOp : Quantum_Op<"sdg"> {
+  let summary = "S-dagger gate";
+  let description = [{
+    Applies an S-dagger gate to a qubit.
+    S† = [[1, 0], [0, -i]] = RZ(-π/2)
+  }];
+  let arguments = (ins AnyType:$qubit);
+}
+
+def Quantum_TdgOp : Quantum_Op<"tdg"> {
+  let summary = "T-dagger gate";
+  let description = [{
+    Applies a T-dagger gate to a qubit.
+    T† = [[1, 0], [0, e^(-iπ/4)]] = RZ(-π/4)
+  }];
+  let arguments = (ins AnyType:$qubit);
+}
+
 //===----------------------------------------------------------------------===//
 // Multi-qubit gates.
 //===----------------------------------------------------------------------===//
@@ -86,6 +122,22 @@ def Quantum_CXOp : Quantum_Op<"cx"> {
   let summary = "Controlled-X gate";
   let description = [{
     Applies a controlled-X gate with control and target qubits.
+  }];
+  let arguments = (ins AnyType:$control, AnyType:$target);
+}
+
+def Quantum_CYOp : Quantum_Op<"cy"> {
+  let summary = "Controlled-Y gate";
+  let description = [{
+    Applies a controlled-Y gate with control and target qubits.
+  }];
+  let arguments = (ins AnyType:$control, AnyType:$target);
+}
+
+def Quantum_CZOp : Quantum_Op<"cz"> {
+  let summary = "Controlled-Z gate";
+  let description = [{
+    Applies a controlled-Z gate with control and target qubits.
   }];
   let arguments = (ins AnyType:$control, AnyType:$target);
 }

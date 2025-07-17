@@ -80,11 +80,27 @@ def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str
                         ir.Operation.create("quantum.z", operands=[get_ssa(gate.q[0])], attributes={})
                     elif gate.name == "h":
                         ir.Operation.create("quantum.h", operands=[get_ssa(gate.q[0])], attributes={})
+                    elif gate.name == "s":
+                        ir.Operation.create("quantum.s", operands=[get_ssa(gate.q[0])], attributes={})
+                    elif gate.name == "t":
+                        ir.Operation.create("quantum.t", operands=[get_ssa(gate.q[0])], attributes={})
+                    elif gate.name == "sdg":
+                        ir.Operation.create("quantum.sdg", operands=[get_ssa(gate.q[0])], attributes={})
+                    elif gate.name == "tdg":
+                        ir.Operation.create("quantum.tdg", operands=[get_ssa(gate.q[0])], attributes={})
                     elif gate.name == "cx":
                         ir.Operation.create(
                             "quantum.cx", operands=[get_ssa(gate.q[0]), get_ssa(gate.q[1])], attributes={}
                         )
-                    # Parametric gates (Phase 1: stub implementation)
+                    elif gate.name == "cy":
+                        ir.Operation.create(
+                            "quantum.cy", operands=[get_ssa(gate.q[0]), get_ssa(gate.q[1])], attributes={}
+                        )
+                    elif gate.name == "cz":
+                        ir.Operation.create(
+                            "quantum.cz", operands=[get_ssa(gate.q[0]), get_ssa(gate.q[1])], attributes={}
+                        )
+                    # Rotation gates
                     elif gate.name == "rx":
                         param_idx = param_index_map[gate.parameters[0].id]
                         param_value = func_body.arguments[param_idx]
