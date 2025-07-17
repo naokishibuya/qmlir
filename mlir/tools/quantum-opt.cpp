@@ -4,9 +4,9 @@
 //
 //===----------------------------------------------------------------------===//
 
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Quantum/IR/Quantum.h"
 #include "mlir/Dialect/Quantum/Passes/QuantumPasses.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
@@ -23,6 +23,7 @@ int main(int argc, char **argv) {
   registry.insert<mlir::quantum::QuantumDialect>();
   registry.insert<mlir::func::FuncDialect>();
   mlir::quantum::registerQuantumPasses();
-  
-  return mlir::asMainReturnCode(mlir::MlirOptMain(argc, argv, "Quantum optimizer\n", registry));
+
+  return mlir::asMainReturnCode(
+      mlir::MlirOptMain(argc, argv, "Quantum optimizer\n", registry));
 }

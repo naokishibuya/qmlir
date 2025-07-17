@@ -7,6 +7,7 @@ A quantum computing dialect experiment for MLIR with gate cancellation optimizat
 * **Quantum Operations**: `quantum.alloc`, `quantum.x`, `quantum.h`, `quantum.cx`
 * **Optimization Pass**: Cancels consecutive X gates (`X; X` → identity)
 * **Standalone Build**: External dialect, no LLVM source modifications needed
+* **Code Formatting**: Automated Python (ruff) and C++ (clang-format) formatting with pre-commit hooks
 
 ## Quick Start
 
@@ -27,7 +28,23 @@ pip install pytest ruff pre_commit
 pre-commit install
 ```
 
-**3. Build LLVM/MLIR:**
+**3. Install clang-format (for C++ code formatting):**
+
+**Ubuntu/Debian:**
+```bash
+sudo apt update && sudo apt install clang-format
+```
+
+**macOS:**
+```bash
+# Using Homebrew
+brew install clang-format
+
+# Or using MacPorts
+sudo port install clang-format
+```
+
+**4. Build LLVM/MLIR:**
 
 At the project sibling directory, clone llvm-project:
 
@@ -57,7 +74,7 @@ cmake -G Ninja ../llvm \
 ninja
 ```
 
-**4. Build Quantum Dialect:**
+**5. Build Quantum Dialect:**
 
 Go back to the quantum compiler project root and build the quantum dialect:
 
@@ -69,7 +86,7 @@ cmake -G Ninja ..
 ninja
 ```
 
-**5. Install QMLIR Python Package (Development):**
+**6. Install QMLIR Python Package (Development):**
 
 For development, install the QMLIR package in editable mode:
 
@@ -84,7 +101,7 @@ This makes the `qmlir` package available in your venv. The package automatically
 
 **Note**: The `qmlir/config.py` module handles automatic discovery of MLIR dependencies, so you don't need to set up paths manually.
 
-**6. Verification:**
+**7. Verification:**
 
 At the project root, run:
 
@@ -161,6 +178,41 @@ See `examples/` directory for Python examples.
 - Run tests frequently with `pytest`
 - Use `examples/` for interactive development
 - Test integration with `quantum-opt` tool
+
+**5. Code Formatting:**
+
+The project uses automated code formatting:
+
+**Python code** (via ruff):
+```bash
+# Format Python files
+ruff format .
+
+# Run linting
+ruff check .
+```
+
+**C++ code** (via clang-format):
+```bash
+# Format all C++ files
+./format-cpp.sh
+
+# Format a single file
+clang-format -i mlir/lib/Dialect/Quantum/QuantumDialect.cpp
+
+# Check formatting without changing files
+clang-format --dry-run --Werror <file>
+```
+
+**Pre-commit hooks** (runs automatically on commit):
+```bash
+# Run all hooks on all files
+pre-commit run --all-files
+
+# Run specific hook
+pre-commit run clang-format --all-files
+pre-commit run ruff --all-files
+```
 
 ## Architecture
 

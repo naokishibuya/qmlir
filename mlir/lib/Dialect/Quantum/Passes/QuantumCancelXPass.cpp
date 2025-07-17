@@ -1,8 +1,8 @@
 //===- QuantumCancelXPass.cpp - Cancel adjacent X gates --------*- C++ -*-===//
 
+#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Quantum/IR/Quantum.h"
 #include "mlir/Dialect/Quantum/Passes/QuantumPasses.h"
-#include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/IR/PatternMatch.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
@@ -27,7 +27,8 @@ struct CancelXPass : public mlir::quantum::impl::CancelXPassBase<CancelXPass> {
 struct CancelAdjacentXPattern : public OpRewritePattern<XOp> {
   using OpRewritePattern<XOp>::OpRewritePattern;
 
-  LogicalResult matchAndRewrite(XOp xOp, PatternRewriter &rewriter) const override {
+  LogicalResult matchAndRewrite(XOp xOp,
+                                PatternRewriter &rewriter) const override {
     // Get the next operation
     Operation *nextOp = xOp.getOperation()->getNextNode();
     if (!nextOp)
@@ -45,17 +46,17 @@ struct CancelAdjacentXPattern : public OpRewritePattern<XOp> {
     // Remove both operations (X * X = I)
     rewriter.eraseOp(nextXOp);
     rewriter.eraseOp(xOp);
-    
+
     return success();
   }
 };
 
 void CancelXPass::runOnOperation() {
   auto func = getOperation();
-  
+
   RewritePatternSet patterns(&getContext());
   patterns.add<CancelAdjacentXPattern>(&getContext());
-  
+
   if (failed(applyPatternsGreedily(func, std::move(patterns)))) {
     signalPassFailure();
   }
