@@ -48,7 +48,7 @@ def get_quantum_opt_path():
         raise RuntimeError(f"quantum-opt not found at: {quantum_opt}")
 
 
-def run_quantum_opt(mlir_code, *args, timeout=10):
+def run_quantum_optimizer(mlir_code, *args, timeout=10):
     """Run quantum-opt with the given MLIR code and arguments.
 
     Args:

@@ -7,10 +7,10 @@ representation using the quantum dialect.
 # Import config to set up MLIR path automatically
 from . import config  # noqa: F401
 from mlir import ir
-from .ast import Circuit
+from .ast import QuantumCircuit
 
 
-def circuit_to_mlir(circuit: Circuit, function_name: str = "main") -> str:
+def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str:
     """Convert a quantum circuit to MLIR representation.
 
     Args:
@@ -57,8 +57,14 @@ def circuit_to_mlir(circuit: Circuit, function_name: str = "main") -> str:
 
                 # Generate quantum operations
                 for gate in circuit.gates:
-                    if gate.name == "x":
+                    if gate.name == "i":
+                        ir.Operation.create("quantum.i", operands=[get_ssa(gate.q[0])], attributes={})
+                    elif gate.name == "x":
                         ir.Operation.create("quantum.x", operands=[get_ssa(gate.q[0])], attributes={})
+                    elif gate.name == "y":
+                        ir.Operation.create("quantum.y", operands=[get_ssa(gate.q[0])], attributes={})
+                    elif gate.name == "z":
+                        ir.Operation.create("quantum.z", operands=[get_ssa(gate.q[0])], attributes={})
                     elif gate.name == "h":
                         ir.Operation.create("quantum.h", operands=[get_ssa(gate.q[0])], attributes={})
                     elif gate.name == "cx":

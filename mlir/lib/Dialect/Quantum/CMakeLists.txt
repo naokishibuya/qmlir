@@ -20,7 +20,7 @@ add_mlir_dialect_library(MLIRQuantumDialect
 
 # Quantum passes library
 add_mlir_dialect_library(MLIRQuantumPasses
-  Passes/QuantumCancelXPass.cpp
+  Passes/QuantumCancelSelfInversePass.cpp
 
   ADDITIONAL_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/mlir/include/mlir/Dialect/Quantum

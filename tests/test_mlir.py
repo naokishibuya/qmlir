@@ -1,6 +1,6 @@
 """Test MLIR code generation functionality."""
 
-from qmlir import Circuit, circuit_to_mlir
+from qmlir import QuantumCircuit, circuit_to_mlir
 
 
 class TestMLIRGeneration:
@@ -8,7 +8,7 @@ class TestMLIRGeneration:
 
     def test_bell_state_mlir(self):
         """Test generating MLIR for Bell state circuit."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(2)
         circuit.h(0).cx(0, 1)
 
         mlir_code = circuit_to_mlir(circuit, "test_bell_state")
@@ -24,7 +24,7 @@ class TestMLIRGeneration:
 
     def test_double_x_mlir(self):
         """Test generating MLIR for double X circuit."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(1)
         circuit.x(0).x(0)
 
         mlir_code = circuit_to_mlir(circuit, "test_double_x")
@@ -41,7 +41,7 @@ class TestMLIRGeneration:
 
     def test_custom_circuit_mlir(self):
         """Test generating MLIR for a custom multi-qubit circuit."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(3)
         circuit.h(0).h(1).x(2).cx(0, 1).cx(1, 2)
 
         mlir_code = circuit_to_mlir(circuit, "test_custom")
@@ -63,7 +63,7 @@ class TestMLIRGeneration:
 
     def test_empty_circuit_mlir(self):
         """Test generating MLIR for an empty circuit."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(1)
 
         mlir_code = circuit_to_mlir(circuit, "test_empty")
 
@@ -81,7 +81,7 @@ class TestMLIRGeneration:
 
     def test_function_name_parameter(self):
         """Test that function name parameter works correctly."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(1)
         circuit.h(0)
 
         mlir_code = circuit_to_mlir(circuit, "my_custom_function")
@@ -94,7 +94,7 @@ class TestMLIRValidation:
 
     def test_mlir_structure(self):
         """Test that generated MLIR has correct structure."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(2)
         circuit.h(0).cx(0, 1)
 
         mlir_code = circuit_to_mlir(circuit, "test_structure")
@@ -112,7 +112,7 @@ class TestMLIRValidation:
 
     def test_qubit_allocation(self):
         """Test that qubits are allocated correctly."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(3)
         circuit.h(0).cx(0, 1).x(2)  # Uses qubits 0, 1, 2
 
         mlir_code = circuit_to_mlir(circuit, "test_allocation")

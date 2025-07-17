@@ -1,6 +1,6 @@
 """Integration tests with quantum-opt tool."""
 
-from qmlir import Circuit, circuit_to_mlir, run_quantum_opt
+from qmlir import QuantumCircuit, circuit_to_mlir, run_quantum_optimizer
 
 
 class TestQuantumOptIntegration:
@@ -8,17 +8,17 @@ class TestQuantumOptIntegration:
 
     def test_quantum_opt_available(self):
         """Test that quantum-opt is available and working."""
-        result = run_quantum_opt("", "--help")
+        result = run_quantum_optimizer("", "--help")
         assert result.returncode == 0
         assert "quantum-opt" in result.stdout or "OVERVIEW" in result.stdout
 
     def test_bell_state_with_quantum_opt(self):
         """Test Bell state MLIR with quantum-opt."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(2)
         circuit.h(0).cx(0, 1)
         mlir_code = circuit_to_mlir(circuit, "bell_state")
 
-        result = run_quantum_opt(mlir_code)
+        result = run_quantum_optimizer(mlir_code)
 
         assert result.returncode == 0
         assert "module {" in result.stdout
@@ -29,11 +29,11 @@ class TestQuantumOptIntegration:
 
     def test_double_x_cancellation(self):
         """Test double X cancellation with quantum-opt."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(1)
         circuit.x(0).x(0)
         mlir_code = circuit_to_mlir(circuit, "double_x_test")
 
-        result = run_quantum_opt(mlir_code, "--quantum-cancel-x")
+        result = run_quantum_optimizer(mlir_code, "--quantum-cancel-self-inverse")
 
         assert result.returncode == 0
         assert "module {" in result.stdout
@@ -47,11 +47,11 @@ class TestQuantumOptIntegration:
 
     def test_complex_circuit_with_quantum_opt(self):
         """Test complex circuit with quantum-opt."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(3)
         circuit.h(0).h(1).x(2).cx(0, 1).cx(1, 2)
         mlir_code = circuit_to_mlir(circuit, "complex_circuit")
 
-        result = run_quantum_opt(mlir_code)
+        result = run_quantum_optimizer(mlir_code)
 
         assert result.returncode == 0
         assert "module {" in result.stdout

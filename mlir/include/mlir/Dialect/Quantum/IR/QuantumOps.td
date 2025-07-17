@@ -38,10 +38,34 @@ def Quantum_AllocOp : Quantum_Op<"alloc"> {
   let results = (outs AnyType:$result);
 }
 
+def Quantum_IOp : Quantum_Op<"i"> {
+  let summary = "Identity gate";
+  let description = [{
+    Applies an identity gate to a qubit (no-op).
+  }];
+  let arguments = (ins AnyType:$qubit);
+}
+
 def Quantum_XOp : Quantum_Op<"x"> {
   let summary = "Pauli-X gate";
   let description = [{
     Applies a Pauli-X gate to a qubit.
+  }];
+  let arguments = (ins AnyType:$qubit);
+}
+
+def Quantum_YOp : Quantum_Op<"y"> {
+  let summary = "Pauli-Y gate";
+  let description = [{
+    Applies a Pauli-Y gate to a qubit.
+  }];
+  let arguments = (ins AnyType:$qubit);
+}
+
+def Quantum_ZOp : Quantum_Op<"z"> {
+  let summary = "Pauli-Z gate";
+  let description = [{
+    Applies a Pauli-Z gate to a qubit.
   }];
   let arguments = (ins AnyType:$qubit);
 }

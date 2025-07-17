@@ -4,8 +4,8 @@ A quantum computing dialect experiment for MLIR with gate cancellation optimizat
 
 ## Features
 
-* **Quantum Operations**: `quantum.alloc`, `quantum.x`, `quantum.h`, `quantum.cx`
-* **Optimization Pass**: Cancels consecutive X gates (`X; X` → identity)
+* **Quantum Operations**: `quantum.alloc`, `quantum.i`, `quantum.x`, `quantum.y`, `quantum.z`, `quantum.h`, `quantum.cx`
+* **Optimization Pass**: Cancels consecutive self-inverse gates (`I; I` → `I`, `X; X` → identity, `Y; Y` → identity, `Z; Z` → identity, `H; H` → identity, `CX; CX` → identity)
 * **Standalone Build**: External dialect, no LLVM source modifications needed
 * **Code Formatting**: Automated Python (ruff) and C++ (clang-format) formatting with pre-commit hooks
 
@@ -110,7 +110,7 @@ echo 'module {
     "quantum.h"(%q) : (i32) -> ()
     return
   }
-}' | ./build/mlir/tools/quantum-opt --quantum-cancel-x
+}' | ./build/mlir/tools/quantum-opt --quantum-cancel-self-inverse
 ```
 
 Output (X gates cancelled):
@@ -137,7 +137,7 @@ python -c 'from qmlir import Circuit; c = Circuit(); c.h(0).cx(0,1); print("QMLI
 At the project root, run:
 
 ```bash
-./build/mlir/tools/quantum-opt mlir/test/Dialect/Quantum/double_x_test.mlir --quantum-cancel-x
+./build/mlir/tools/quantum-opt mlir/test/Dialect/Quantum/double_x_test.mlir --quantum-cancel-self-inverse
 ./build/mlir/tools/quantum-opt mlir/test/Dialect/Quantum/bell_state.mlir --verify-diagnostics
 ```
 

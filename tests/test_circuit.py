@@ -1,21 +1,21 @@
 """Test basic circuit construction and AST functionality."""
 
 # Import configuration to set up paths
-from qmlir import Circuit, Gate
+from qmlir import QuantumCircuit, QuantumGate
 
 
-class TestCircuit:
-    """Test the Circuit class."""
+class TestQuantumCircuit:
+    """Test the QuantumCircuit class."""
 
     def test_empty_circuit(self):
         """Test creating an empty circuit."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(1)
         assert len(circuit.gates) == 0
-        assert str(circuit) == "Circuit:"
+        assert str(circuit) == "QuantumCircuit(1 qubits):"
 
     def test_single_gate(self):
         """Test adding a single gate."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(1)
         circuit.h(0)
 
         assert len(circuit.gates) == 1
@@ -24,7 +24,7 @@ class TestCircuit:
 
     def test_method_chaining(self):
         """Test that gate methods support chaining."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(2)
         result = circuit.h(0).x(1).cx(0, 1)
 
         assert result is circuit  # Should return self
@@ -42,7 +42,7 @@ class TestCircuit:
 
     def test_bell_state_circuit(self):
         """Test creating a Bell state circuit."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(2)
         circuit.h(0).cx(0, 1)
 
         assert len(circuit.gates) == 2
@@ -53,7 +53,7 @@ class TestCircuit:
 
     def test_double_x_circuit(self):
         """Test creating a double X circuit."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(1)
         circuit.x(0).x(0)
 
         assert len(circuit.gates) == 2
@@ -62,7 +62,7 @@ class TestCircuit:
 
     def test_multi_qubit_circuit(self):
         """Test creating a multi-qubit circuit."""
-        circuit = Circuit()
+        circuit = QuantumCircuit(3)
         circuit.h(0).h(1).x(2).cx(0, 1).cx(1, 2)
 
         assert len(circuit.gates) == 5
@@ -81,23 +81,23 @@ class TestGate:
     def test_gate_creation(self):
         """Test creating different types of gates."""
         # Single qubit gates
-        h_gate = Gate("h", 0)
+        h_gate = QuantumGate("h", 0)
         assert h_gate.name == "h"
         assert h_gate.q == (0,)
 
-        x_gate = Gate("x", 1)
+        x_gate = QuantumGate("x", 1)
         assert x_gate.name == "x"
         assert x_gate.q == (1,)
 
         # Two qubit gate
-        cx_gate = Gate("cx", 0, 1)
+        cx_gate = QuantumGate("cx", 0, 1)
         assert cx_gate.name == "cx"
         assert cx_gate.q == (0, 1)
 
     def test_gate_repr(self):
         """Test gate string representation."""
-        h_gate = Gate("h", 0)
+        h_gate = QuantumGate("h", 0)
         assert repr(h_gate) == "Gate(h, 0)"
 
-        cx_gate = Gate("cx", 0, 1)
+        cx_gate = QuantumGate("cx", 0, 1)
         assert repr(cx_gate) == "Gate(cx, 0, 1)"

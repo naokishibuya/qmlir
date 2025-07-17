@@ -9,8 +9,8 @@
 namespace mlir {
 namespace quantum {
 
-/// Create a pass that cancels adjacent X gates on the same qubit
-std::unique_ptr<mlir::Pass> createCancelXPass();
+/// Create a pass that cancels adjacent self-inverse gates on the same qubit
+std::unique_ptr<mlir::Pass> createCancelSelfInversePass();
 
 #define GEN_PASS_REGISTRATION
 #include "mlir/Dialect/Quantum/Passes/Passes.h.inc"
