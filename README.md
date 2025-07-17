@@ -169,7 +169,7 @@ See `examples/` directory for Python examples.
 - Register in `backend/include/mlir/Dialect/Quantum/Passes/Passes.h`
 
 **3. Extend Python Library:**
-- Add gate operations in `qmlir/quantum_circuit.py`
+- Add gate operations in `qmlir/circuit.py`
 - Update MLIR generation in `qmlir/mlir_generator.py`
 - Add tests in `tests/`
 
