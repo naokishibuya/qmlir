@@ -46,3 +46,7 @@
 # Build directories
 build/
 */build/
+
+# Python 
+*.egg-info/
+__pycache__/

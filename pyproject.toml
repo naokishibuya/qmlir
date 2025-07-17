@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "qmlir"
+version = "0.1.0"
+description = "Quantum Circuit Library for MLIR"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [
+    {name = "Naoki Shibuya"},
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Compilers",
+]
+dependencies = [
+    # Note: MLIR Python bindings are provided by the build system
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=6.0",
+    "pytest-cov>=2.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["qmlir*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--verbose",
+]
+
+[tool.ruff]
+# Set the maximum line length
+line-length = 120
+
+[tool.ruff.lint]
+# Add the `line-too-long` rule to the enforced rule set
+extend-select = ["E501"]
