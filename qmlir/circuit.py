@@ -44,12 +44,17 @@ class QuantumGate:
         self.q = qubits
         self.parameters = parameters or []
 
+    @property
+    def description(self) -> str:
+        """Return the name of the gate."""
+        return AVAILABLE_QUANTUM_GATES[self.name]
+
     def __repr__(self) -> str:
         if self.parameters:
             param_str = ", ".join(str(p) for p in self.parameters)
-            return f"Gate({self.name}, {', '.join(map(str, self.q))}, [{param_str}])"
+            return f"{self.name.upper()}({', '.join(map(str, self.q))}, [{param_str}])"
         else:
-            return f"Gate({self.name}, {', '.join(map(str, self.q))})"
+            return f"{self.name.upper()}({', '.join(map(str, self.q))})"
 
 
 class QuantumCircuit:

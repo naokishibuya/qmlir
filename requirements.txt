@@ -1,0 +1,5 @@
+jax==0.6.2
+jupyter==1.1.1
+pre_commit==4.2.0
+pytest==8.4.1
+ruff==0.12.3

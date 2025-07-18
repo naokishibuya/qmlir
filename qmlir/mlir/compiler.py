@@ -132,12 +132,22 @@ def optimize(mlir_code, *args, timeout=10):
         timeout (int): Timeout in seconds for the subprocess call.
 
     Returns:
-        subprocess.CompletedProcess: The result of the subprocess call.
+        str: The optimized MLIR code.
 
     Raises:
-        RuntimeError: If quantum-opt is not found.
+        RuntimeError: If quantum-opt is not found or optimization fails.
     """
     quantum_opt_path = get_quantum_opt_path()
+
+    # Default to self-inverse cancellation pass if no args provided
+    if not args:
+        args = ["--quantum-cancel-self-inverse"]
+
     command = [quantum_opt_path] + list(args)
 
-    return subprocess.run(command, input=mlir_code, capture_output=True, text=True, timeout=timeout)
+    result = subprocess.run(command, input=mlir_code, capture_output=True, text=True, timeout=timeout)
+
+    if result.returncode != 0:
+        raise RuntimeError(f"quantum-opt failed: {result.stderr}")
+
+    return result.stdout
