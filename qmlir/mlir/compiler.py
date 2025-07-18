@@ -1,13 +1,13 @@
-"""MLIR Code Generation for Quantum Circuits
+"""MLIR Code Generation and Optimization for Quantum Circuits
 
 This module handles the conversion of quantum circuit representation to MLIR
-representation using the quantum dialect.
+representation using the quantum dialect, and provides optimization capabilities.
 """
 
-# Import backend to set up MLIR path automatically
-from . import backend  # noqa: F401
+import subprocess
+from ..circuit import QuantumCircuit
+from .config import get_quantum_opt_path  # This will also setup MLIR path
 from mlir import ir
-from .circuit import QuantumCircuit
 
 
 def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str:
@@ -121,3 +121,23 @@ def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str
                 ir.Operation.create("func.return", operands=[], attributes={})
 
         return str(module)
+
+
+def optimize(mlir_code, *args, timeout=10):
+    """Run quantum-opt with the given MLIR code and arguments.
+
+    Args:
+        mlir_code (str): The MLIR code to process.
+        *args: Additional command-line arguments to pass to quantum-opt.
+        timeout (int): Timeout in seconds for the subprocess call.
+
+    Returns:
+        subprocess.CompletedProcess: The result of the subprocess call.
+
+    Raises:
+        RuntimeError: If quantum-opt is not found.
+    """
+    quantum_opt_path = get_quantum_opt_path()
+    command = [quantum_opt_path] + list(args)
+
+    return subprocess.run(command, input=mlir_code, capture_output=True, text=True, timeout=timeout)

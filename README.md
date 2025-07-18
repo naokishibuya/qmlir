@@ -112,7 +112,7 @@ echo 'module {
     "quantum.h"(%q) : (i32) -> ()
     return
   }
-}' | ./build/backend/tools/quantum-opt --quantum-cancel-self-inverse
+}' | ./build/mlir/tools/quantum-opt --quantum-cancel-self-inverse
 ```
 
 Output (X gates cancelled):
@@ -139,8 +139,8 @@ python -c 'from qmlir import Circuit; c = Circuit(); c.h(0).cx(0,1); print("QMLI
 At the project root, run:
 
 ```bash
-./build/backend/tools/quantum-opt backend/test/Dialect/Quantum/double_x_test.mlir --quantum-cancel-self-inverse
-./build/backend/tools/quantum-opt backend/test/Dialect/Quantum/bell_state.mlir --verify-diagnostics
+./build/mlir/tools/quantum-opt mlir/test/Dialect/Quantum/double_x_test.mlir --quantum-cancel-self-inverse
+./build/mlir/tools/quantum-opt mlir/test/Dialect/Quantum/bell_state.mlir --verify-diagnostics
 ```
 
 There are more examples in `examples/` directory.
@@ -159,14 +159,14 @@ See `examples/` directory for Python examples.
 
 **1. Add Operations:**
 
-- Edit `backend/include/mlir/Dialect/Quantum/IR/QuantumOps.td`
-- Implement in `backend/lib/Dialect/Quantum/QuantumOps.cpp`  
-- Add tests in `backend/test/Dialect/Quantum/`
+- Edit `mlir/include/mlir/Dialect/Quantum/IR/QuantumOps.td`
+- Implement in `mlir/lib/Dialect/Quantum/QuantumOps.cpp`  
+- Add tests in `mlir/test/Dialect/Quantum/`
 
 **2. Add Passes:**
-- Edit `backend/include/mlir/Dialect/Quantum/Passes/Passes.td`
-- Implement in `backend/lib/Dialect/Quantum/Passes/`
-- Register in `backend/include/mlir/Dialect/Quantum/Passes/Passes.h`
+- Edit `mlir/include/mlir/Dialect/Quantum/Passes/Passes.td`
+- Implement in `mlir/lib/Dialect/Quantum/Passes/`
+- Register in `mlir/include/mlir/Dialect/Quantum/Passes/Passes.h`
 
 **3. Extend Python Library:**
 - Add gate operations in `qmlir/circuit.py`
@@ -198,7 +198,7 @@ ruff check .
 ./format-cpp.sh
 
 # Format a single file
-clang-format -i backend/lib/Dialect/Quantum/QuantumDialect.cpp
+clang-format -i mlir/lib/Dialect/Quantum/QuantumDialect.cpp
 
 # Check formatting without changing files
 clang-format --dry-run --Werror <file>
@@ -218,7 +218,7 @@ pre-commit run ruff --all-files
 
 The quantum compiler follows a layered architecture:
 
-1. **MLIR Quantum Dialect** (`backend/`): Core quantum operations and passes
+1. **MLIR Quantum Dialect** (`mlir/`): Core quantum operations and passes
 2. **Python Frontend** (`qmlir/`): High-level circuit construction API
 3. **Integration Layer** (`tests/`, `examples/`): Testing and demonstrations
 4. **Build System** (`CMakeLists.txt`, `pyproject.toml`): Development and packaging

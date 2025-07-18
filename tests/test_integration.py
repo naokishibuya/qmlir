@@ -1,6 +1,6 @@
 """Integration tests with quantum-opt tool."""
 
-from qmlir import QuantumCircuit, circuit_to_mlir, run_quantum_optimizer
+from qmlir import QuantumCircuit, circuit_to_mlir, optimize
 
 
 class TestQuantumOptIntegration:
@@ -8,7 +8,7 @@ class TestQuantumOptIntegration:
 
     def test_quantum_opt_available(self):
         """Test that quantum-opt is available and working."""
-        result = run_quantum_optimizer("", "--help")
+        result = optimize("", "--help")
         assert result.returncode == 0
         assert "quantum-opt" in result.stdout or "OVERVIEW" in result.stdout
 
@@ -18,7 +18,7 @@ class TestQuantumOptIntegration:
         circuit.h(0).cx(0, 1)
         mlir_code = circuit_to_mlir(circuit, "bell_state")
 
-        result = run_quantum_optimizer(mlir_code)
+        result = optimize(mlir_code)
 
         assert result.returncode == 0
         assert "module {" in result.stdout
@@ -33,7 +33,7 @@ class TestQuantumOptIntegration:
         circuit.x(0).x(0)
         mlir_code = circuit_to_mlir(circuit, "double_x_test")
 
-        result = run_quantum_optimizer(mlir_code, "--quantum-cancel-self-inverse")
+        result = optimize(mlir_code, "--quantum-cancel-self-inverse")
 
         assert result.returncode == 0
         assert "module {" in result.stdout
@@ -51,7 +51,7 @@ class TestQuantumOptIntegration:
         circuit.h(0).h(1).x(2).cx(0, 1).cx(1, 2)
         mlir_code = circuit_to_mlir(circuit, "complex_circuit")
 
-        result = run_quantum_optimizer(mlir_code)
+        result = optimize(mlir_code)
 
         assert result.returncode == 0
         assert "module {" in result.stdout

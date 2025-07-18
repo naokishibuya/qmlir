@@ -1,19 +1,17 @@
-"""Backend Configuration and Optimization
+"""MLIR Configuration and Setup
 
-This module handles backend setup, configuration, and optimization
-for the QMLIR library.
+This module handles MLIR configuration and setup for the QMLIR library.
 """
 
 import os
 import sys
-import subprocess
 from pathlib import Path
 
 
 def setup_mlir_path():
     """Set up the MLIR Python bindings path."""
     # Get the project root directory
-    project_root = Path(__file__).parent.parent
+    project_root = Path(__file__).parent.parent.parent
 
     # Check environment variable first
     if os.environ.get("MLIR_PYTHON_PACKAGES"):
@@ -40,33 +38,13 @@ def get_quantum_opt_path():
     Raises:
         RuntimeError: If quantum-opt is not found.
     """
-    project_root = Path(__file__).parent.parent
-    quantum_opt = project_root / "build" / "backend" / "tools" / "quantum-opt"
+    project_root = Path(__file__).parent.parent.parent
+    quantum_opt = project_root / "build" / "mlir" / "tools" / "quantum-opt"
 
     if quantum_opt.exists():
         return str(quantum_opt)
     else:
         raise RuntimeError(f"quantum-opt not found at: {quantum_opt}")
-
-
-def run_quantum_optimizer(mlir_code, *args, timeout=10):
-    """Run quantum-opt with the given MLIR code and arguments.
-
-    Args:
-        mlir_code (str): The MLIR code to process.
-        *args: Additional command-line arguments to pass to quantum-opt.
-        timeout (int): Timeout in seconds for the subprocess call.
-
-    Returns:
-        subprocess.CompletedProcess: The result of the subprocess call.
-
-    Raises:
-        RuntimeError: If quantum-opt is not found.
-    """
-    quantum_opt_path = get_quantum_opt_path()
-    command = [quantum_opt_path] + list(args)
-
-    return subprocess.run(command, input=mlir_code, capture_output=True, text=True, timeout=timeout)
 
 
 # Initialize MLIR path when this module is imported

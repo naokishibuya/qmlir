@@ -4,8 +4,7 @@ This example shows how to use parametric quantum circuits with the QMLIR compile
 including MLIR dialect support for parametric gates and optimization passes.
 """
 
-from qmlir import QuantumCircuit, Parameter, transpile
-from qmlir.compiler import circuit_to_mlir
+from qmlir import QuantumCircuit, Parameter, transpile, circuit_to_mlir
 
 
 def vqe_ansatz_example():

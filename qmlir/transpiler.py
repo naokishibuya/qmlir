@@ -4,8 +4,7 @@ This module provides the main transpilation interface for quantum circuits,
 including the transpile function that converts circuits to optimized MLIR.
 """
 
-from .compiler import circuit_to_mlir
-from .backend import run_quantum_optimizer
+from .mlir import circuit_to_mlir, optimize
 from .circuit import QuantumCircuit
 
 
@@ -30,7 +29,7 @@ def transpile(circuit: QuantumCircuit, optimization_level: int = 1, function_nam
     if optimization_level == 0:
         return mlir_code
     elif optimization_level >= 1:
-        result = run_quantum_optimizer(mlir_code, "--quantum-cancel-self-inverse")
+        result = optimize(mlir_code, "--quantum-cancel-self-inverse")
         if result.returncode == 0:
             return result.stdout
         else:

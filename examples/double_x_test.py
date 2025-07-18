@@ -1,6 +1,6 @@
 """Double X gate test - demonstrates gate cancellation."""
 
-from qmlir import QuantumCircuit, circuit_to_mlir, run_quantum_optimizer
+from qmlir import QuantumCircuit, circuit_to_mlir, optimize
 
 
 def main():
@@ -30,7 +30,7 @@ def main():
     print()
 
     # Run optimization
-    result = run_quantum_optimizer(mlir_code, "--quantum-cancel-self-inverse")
+    result = optimize(mlir_code, "--quantum-cancel-self-inverse")
     if result.returncode == 0:
         print("Optimized MLIR (self-inverse gates cancelled):")
         print(result.stdout.strip())

@@ -5,8 +5,7 @@ This demonstrates the S, T, S†, T†, CY, and CZ gates with MLIR generation.
 Phase gates (S, T) are essential for Clifford+T universal quantum computation.
 """
 
-from qmlir import QuantumCircuit, Parameter, transpile
-from qmlir.compiler import circuit_to_mlir
+from qmlir import QuantumCircuit, Parameter, transpile, circuit_to_mlir
 
 
 def demo_phase_gates():
