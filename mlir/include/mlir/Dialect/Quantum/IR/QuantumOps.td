@@ -23,7 +23,7 @@ def Quantum_Dialect : Dialect {
 // Base quantum operation definition.
 //===----------------------------------------------------------------------===//
 
-class Quantum_Op<string mnemonic, list<Trait> traits = []> : 
+class Quantum_Op<string mnemonic, list<Trait> traits = []> :
     Op<Quantum_Dialect, mnemonic, traits>;
 
 def Quantum_AllocOp : Quantum_Op<"alloc"> {

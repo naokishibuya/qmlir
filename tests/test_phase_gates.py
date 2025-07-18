@@ -1,6 +1,7 @@
 """Test the new quantum gates (S, T, Sdg, Tdg, CY, CZ)."""
 
-from qmlir import QuantumCircuit, circuit_to_mlir
+from qmlir import QuantumCircuit
+from qmlir.mlir import circuit_to_mlir
 
 
 class TestPhaseGates:

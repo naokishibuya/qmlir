@@ -1,6 +1,7 @@
 """Test MLIR code generation functionality."""
 
-from qmlir import QuantumCircuit, Parameter, circuit_to_mlir
+from qmlir import QuantumCircuit, Parameter
+from qmlir.mlir import circuit_to_mlir
 
 
 class TestMLIRGeneration:

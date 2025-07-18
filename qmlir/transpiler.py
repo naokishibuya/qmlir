@@ -29,10 +29,5 @@ def transpile(circuit: QuantumCircuit, optimization_level: int = 1, function_nam
     if optimization_level == 0:
         return mlir_code
     elif optimization_level >= 1:
-        result = optimize(mlir_code, "--quantum-cancel-self-inverse")
-        if result.returncode == 0:
-            return result.stdout
-        else:
-            raise RuntimeError(f"Optimization failed: {result.stderr}")
-
+        return optimize(mlir_code, "--quantum-cancel-self-inverse")
     return mlir_code

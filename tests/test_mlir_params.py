@@ -6,7 +6,9 @@ Tests the full C++ MLIR backend support for parametric gates including:
 - End-to-end transpilation with parametric circuits
 """
 
-from qmlir import QuantumCircuit, Parameter, transpile, circuit_to_mlir
+from qmlir import QuantumCircuit, Parameter
+from qmlir.mlir import circuit_to_mlir
+from qmlir.transpiler import transpile
 
 
 class TestParametricMlirDialect:

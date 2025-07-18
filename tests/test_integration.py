@@ -1,6 +1,7 @@
 """Integration tests with quantum-opt tool."""
 
-from qmlir import QuantumCircuit, circuit_to_mlir, optimize
+from qmlir import QuantumCircuit
+from qmlir.mlir import circuit_to_mlir, optimize
 
 
 class TestQuantumOptIntegration:
@@ -9,8 +10,7 @@ class TestQuantumOptIntegration:
     def test_quantum_opt_available(self):
         """Test that quantum-opt is available and working."""
         result = optimize("", "--help")
-        assert result.returncode == 0
-        assert "quantum-opt" in result.stdout or "OVERVIEW" in result.stdout
+        assert "quantum-opt" in result or "OVERVIEW" in result
 
     def test_bell_state_with_quantum_opt(self):
         """Test Bell state MLIR with quantum-opt."""
@@ -20,12 +20,11 @@ class TestQuantumOptIntegration:
 
         result = optimize(mlir_code)
 
-        assert result.returncode == 0
-        assert "module {" in result.stdout
-        assert "func.func @bell_state()" in result.stdout
-        assert '"quantum.alloc"()' in result.stdout
-        assert '"quantum.h"(' in result.stdout
-        assert '"quantum.cx"(' in result.stdout
+        assert "module {" in result
+        assert "func.func @bell_state()" in result
+        assert '"quantum.alloc"()' in result
+        assert '"quantum.h"(' in result
+        assert '"quantum.cx"(' in result
 
     def test_double_x_cancellation(self):
         """Test double X cancellation with quantum-opt."""
@@ -35,15 +34,14 @@ class TestQuantumOptIntegration:
 
         result = optimize(mlir_code, "--quantum-cancel-self-inverse")
 
-        assert result.returncode == 0
-        assert "module {" in result.stdout
-        assert "func.func @double_x_test()" in result.stdout
+        assert "module {" in result
+        assert "func.func @double_x_test()" in result
 
         # After cancellation, should have no X gates
-        assert '"quantum.x"(' not in result.stdout
+        assert '"quantum.x"(' not in result
 
         # Should still have qubit allocation
-        assert '"quantum.alloc"()' in result.stdout
+        assert '"quantum.alloc"()' in result
 
     def test_complex_circuit_with_quantum_opt(self):
         """Test complex circuit with quantum-opt."""
@@ -53,11 +51,10 @@ class TestQuantumOptIntegration:
 
         result = optimize(mlir_code)
 
-        assert result.returncode == 0
-        assert "module {" in result.stdout
-        assert "func.func @complex_circuit()" in result.stdout
+        assert "module {" in result
+        assert "func.func @complex_circuit()" in result
 
         # Should preserve all gates (no cancellation without passes)
-        assert '"quantum.h"(' in result.stdout
-        assert '"quantum.x"(' in result.stdout
-        assert '"quantum.cx"(' in result.stdout
+        assert '"quantum.h"(' in result
+        assert '"quantum.x"(' in result
+        assert '"quantum.cx"(' in result

@@ -1,7 +1,8 @@
 """Test basic circuit construction and AST functionality."""
 
 # Import configuration to set up paths
-from qmlir import QuantumCircuit, QuantumGate
+from qmlir import QuantumCircuit
+from qmlir.circuit import QuantumGate
 
 
 class TestQuantumCircuit:
@@ -97,7 +98,7 @@ class TestGate:
     def test_gate_repr(self):
         """Test gate string representation."""
         h_gate = QuantumGate("h", 0)
-        assert repr(h_gate) == "Gate(h, 0)"
+        assert repr(h_gate) == "H(0)"
 
         cx_gate = QuantumGate("cx", 0, 1)
-        assert repr(cx_gate) == "Gate(cx, 0, 1)"
+        assert repr(cx_gate) == "CX(0, 1)"

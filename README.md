@@ -214,7 +214,7 @@ See `examples/` directory for Python examples.
 **1. Add Operations:**
 
 - Edit `mlir/include/mlir/Dialect/Quantum/IR/QuantumOps.td`
-- Implement in `mlir/lib/Dialect/Quantum/QuantumOps.cpp`  
+- Implement in `mlir/lib/Dialect/Quantum/QuantumOps.cpp`
 - Add tests in `mlir/test/Dialect/Quantum/`
 
 **2. Add Passes:**
@@ -267,14 +267,3 @@ pre-commit run --all-files
 pre-commit run clang-format --all-files
 pre-commit run ruff --all-files
 ```
-
-## Architecture
-
-The quantum compiler follows a layered architecture:
-
-1. **MLIR Quantum Dialect** (`mlir/`): Core quantum operations and passes
-2. **Python Frontend** (`qmlir/`): High-level circuit construction API
-3. **Simulation Interface** (`qmlir/simulator.py`): High-level simulation functions
-4. **JAX Runtime** (`qmlir/runtime/`): High-performance JAX-based simulation backend
-5. **Integration Layer** (`tests/`, `examples/`): Testing and demonstrations
-6. **Build System** (`CMakeLists.txt`, `pyproject.toml`): Development and packaging
