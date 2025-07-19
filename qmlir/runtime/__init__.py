@@ -1,9 +1,8 @@
-"""JAX-based quantum circuit runtime for QMLIR.
+"""QMLIR Runtime Backends
 
-This module provides high-performance quantum circuit simulation using JAX
-for automatic differentiation, JIT compilation, and GPU acceleration.
+This module provides runtime backends for quantum circuit simulation.
 """
 
-from .jax_backend import simulate_circuit, simulate_from_mlir, GateID
+from .jax import JaxSimulator
 
-__all__ = ["simulate_circuit", "simulate_from_mlir", "GateID"]
+__all__ = ["JaxSimulator"]

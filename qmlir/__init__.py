@@ -1,11 +1,18 @@
-"""QMLIR - Quantum Circuit Library for MLIR
+"""QMLIR - Quantum Computing with MLIR
 
-A Python library for constructing and compiling quantum circuits to MLIR.
+A simple, fast quantum computing library that compiles circuits to MLIR
+and simulates them using JAX for high performance.
 """
 
 from .circuit import QuantumCircuit
 from .parameter import Parameter
-from .simulator import simulate
+from .runtime import JaxSimulator
 
+# Main API - Clean, backend-explicit interface
+__all__ = [
+    "QuantumCircuit",
+    "Parameter",
+    "JaxSimulator",
+]
 
-__all__ = ["QuantumCircuit", "Parameter", "simulate"]
+# No global simulate() function - users explicitly choose their backend

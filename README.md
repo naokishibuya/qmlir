@@ -4,15 +4,6 @@ This project implements a quantum computing dialect for MLIR (Multi-Level Interm
 
 QMLIR is an experimental project that supports only a subset of quantum operations, focusing on basic gates and their optimizations. The main feature is the cancellation of consecutive self-inverse gates, which simplifies quantum circuits by removing redundant operations.
 
-## Features
-
-* **Quantum Operations**: `quantum.alloc`, `quantum.i`, `quantum.x`, `quantum.y`, `quantum.z`, `quantum.h`, `quantum.cx`
-* **Optimization Pass**: Cancels consecutive self-inverse gates (`I; I` → `I`, `X; X` → identity, `Y; Y` → identity, `Z; Z` → identity, `H; H` → identity, `CX; CX` → identity)
-* **Simple API**: Just three imports needed: `QuantumCircuit`, `Parameter`, `simulate`
-* **JAX Runtime**: High-performance quantum circuit simulation with JIT compilation and GPU acceleration
-* **Standalone Build**: External dialect, no LLVM source modifications needed
-* **Code Formatting**: Automated Python (ruff) and C++ (clang-format) formatting with pre-commit hooks
-
 ## Quick Start
 
 **1. Clone the Repository:**
@@ -100,91 +91,6 @@ pip install -e .
 ```
 
 This makes the `qmlir` package available in your venv, automatically discovering MLIR Python bindings from `../llvm-project/build/tools/mlir/python_packages/mlir_core` (or `MLIR_PYTHON_PACKAGES` environment variable) and the `quantum-opt` executable from the local build.
-
-**7. Verification:**
-
-At the project root, run:
-
-```bash
-echo 'module {
-  func.func @test() {
-    %q = "quantum.alloc"() : () -> i32
-    "quantum.x"(%q) : (i32) -> ()
-    "quantum.x"(%q) : (i32) -> ()
-    "quantum.h"(%q) : (i32) -> ()
-    return
-  }
-}' | ./build/mlir/tools/quantum-opt --quantum-cancel-self-inverse
-```
-
-Output (X gates cancelled):
-```mlir
-module {
-  func.func @test() {
-    %0 = "quantum.alloc"() : () -> i32
-    "quantum.h"(%0) : (i32) -> ()
-    return
-  }
-}
-```
-
-Test the Python library:
-
-```bash
-python -c 'from qmlir import QuantumCircuit, simulate; c = QuantumCircuit(2); c.h(0).cx(0,1); results = simulate(c); print("Bell state probabilities:", results["probabilities"])'
-```
-
-**Minimal API Example:**
-
-```bash
-python examples/bell_state_demo.py
-```
-
-**Interactive Learning:**
-
-```bash
-cd notebooks
-jupyter notebook
-```
-
-**Full Documentation:**
-
-```bash
-python examples/optimization_demo.py
-python examples/parameterized_demo.py
-```
-
-The examples demonstrate Bell states, circuit optimization, and parameterized circuits using QMLIR's simple 3-function API. The notebooks provide interactive tutorials with detailed explanations.
-```
-QMLIR + JAX Quantum Simulation Example
-=============================================
-1. Creating Bell state circuit...
-   Circuit: H(0) → CX(0,1)
-   Gates: 2
-
-2. Simulating circuit...
-   → Compiling to MLIR
-   → Optimizing with quantum-opt
-   → Simulating with JAX backend
-   ✓ Simulation complete
-
-3. Results:
-   Bell state |Φ+⟩ = (|00⟩ + |11⟩)/√2
-   -----------------------------------
-   |00⟩:  0.7071 → P = 0.5000
-   |01⟩:  0.0000 → P = 0.0000
-   |10⟩:  0.0000 → P = 0.0000
-   |11⟩:  0.7071 → P = 0.5000
-
-4. Verification:
-   Expected P(|00⟩) = P(|11⟩) = 0.5
-   Actual   P(|00⟩) = 0.5000
-   Actual   P(|11⟩) = 0.5000
-   Bell state created: ✓ YES
-
-=============================================
-JAX simulation working correctly! 🎉
-```
 
 ## Testing
 

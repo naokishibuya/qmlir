@@ -1,12 +1,12 @@
-"""MLIR Code Generation and Optimization for Quantum Circuits
+"""MLIR Transpilation and Optimization for Quantum Circuits
 
-This module handles the conversion of quantum circuit representation to MLIR
+This module handles the transpilation of quantum circuit representation to MLIR
 representation using the quantum dialect, and provides optimization capabilities.
 """
 
 import subprocess
 from ..circuit import QuantumCircuit
-from .config import get_quantum_opt_path  # This will also setup MLIR path
+from .config import get_quantum_opt_path  # This will also ensure LLVM/MLIR bindings
 from mlir import ir
 
 
@@ -57,15 +57,16 @@ def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str
                 func_body.add_argument(f64_type, ir.Location.unknown())
 
             with ir.InsertionPoint(func_body):
-                # Allocate qubits on demand
+                # Allocate all qubits upfront to ensure consistent ordering
                 i32_type = ir.IntegerType.get_signless(32)
                 ssa_qubits = {}
 
-                def get_ssa(idx):
-                    if idx in ssa_qubits:
-                        return ssa_qubits[idx]
+                # Pre-allocate all qubits
+                for i in range(circuit.num_qubits):
                     op = ir.Operation.create("quantum.alloc", results=[i32_type], attributes={})
-                    ssa_qubits[idx] = op.result
+                    ssa_qubits[i] = op.result
+
+                def get_ssa(idx):
                     return ssa_qubits[idx]
 
                 # Generate quantum operations
@@ -123,8 +124,8 @@ def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str
         return str(module)
 
 
-def optimize(mlir_code, *args, timeout=10):
-    """Run quantum-opt with the given MLIR code and arguments.
+def apply_passes(mlir_code, *args, timeout=10):
+    """Apply MLIR optimization passes using quantum-opt.
 
     Args:
         mlir_code (str): The MLIR code to process.

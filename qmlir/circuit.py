@@ -6,55 +6,7 @@ before they are compiled to MLIR.
 
 from typing import List
 from .parameter import Parameter
-
-
-AVAILABLE_QUANTUM_GATES = {
-    "i": "Identity",
-    "x": "Pauli-X",
-    "y": "Pauli-Y",
-    "z": "Pauli-Z",
-    "h": "Hadamard",
-    "s": "S gate (Phase)",
-    "t": "T gate (π/8)",
-    "sdg": "S-dagger",
-    "tdg": "T-dagger",
-    "cx": "CNOT",
-    "cy": "Controlled-Y",
-    "cz": "Controlled-Z",
-    "rx": "Rotation-X",
-    "ry": "Rotation-Y",
-    "rz": "Rotation-Z",
-}
-
-
-class QuantumGate:
-    """Represents a quantum gate operation."""
-
-    def __init__(self, name: str, *qubits: int, parameters: List[Parameter] = None):
-        """Initialize a quantum gate.
-
-        Args:
-            name: The name of the gate (e.g., 'x', 'h', 'cx', 'rx')
-            *qubits: The qubit indices this gate operates on
-            parameters: List of Parameter objects for parametric gates
-        """
-        assert name in AVAILABLE_QUANTUM_GATES, f"Unknown gate: {name}"
-
-        self.name = name
-        self.q = qubits
-        self.parameters = parameters or []
-
-    @property
-    def description(self) -> str:
-        """Return the name of the gate."""
-        return AVAILABLE_QUANTUM_GATES[self.name]
-
-    def __repr__(self) -> str:
-        if self.parameters:
-            param_str = ", ".join(str(p) for p in self.parameters)
-            return f"{self.name.upper()}({', '.join(map(str, self.q))}, [{param_str}])"
-        else:
-            return f"{self.name.upper()}({', '.join(map(str, self.q))})"
+from .gate import QuantumGate
 
 
 class QuantumCircuit:
@@ -211,7 +163,7 @@ class QuantumCircuit:
         self._validate_qubit(control)
         self._validate_qubit(target)
         if control == target:
-            raise ValueError("Control and target qubits cannot be the same")
+            raise ValueError("Control and target qubits must be different")
         self.gates.append(QuantumGate("cx", control, target))
         return self
 
@@ -228,7 +180,7 @@ class QuantumCircuit:
         self._validate_qubit(control)
         self._validate_qubit(target)
         if control == target:
-            raise ValueError("Control and target qubits cannot be the same")
+            raise ValueError("Control and target qubits must be different")
         self.gates.append(QuantumGate("cy", control, target))
         return self
 
@@ -245,7 +197,7 @@ class QuantumCircuit:
         self._validate_qubit(control)
         self._validate_qubit(target)
         if control == target:
-            raise ValueError("Control and target qubits cannot be the same")
+            raise ValueError("Control and target qubits must be different")
         self.gates.append(QuantumGate("cz", control, target))
         return self
 
@@ -254,7 +206,7 @@ class QuantumCircuit:
 
         Args:
             qubit: The qubit index to apply the gate to
-            parameter: The rotation angle parameter
+            parameter: The rotation parameter
 
         Returns:
             Self for method chaining
@@ -268,7 +220,7 @@ class QuantumCircuit:
 
         Args:
             qubit: The qubit index to apply the gate to
-            parameter: The rotation angle parameter
+            parameter: The rotation parameter
 
         Returns:
             Self for method chaining
@@ -282,7 +234,7 @@ class QuantumCircuit:
 
         Args:
             qubit: The qubit index to apply the gate to
-            parameter: The rotation angle parameter
+            parameter: The rotation parameter
 
         Returns:
             Self for method chaining
@@ -295,7 +247,5 @@ class QuantumCircuit:
         return f"QuantumCircuit({self.num_qubits} qubits, {len(self.gates)} gates)"
 
     def __str__(self) -> str:
-        lines = [f"QuantumCircuit({self.num_qubits} qubits):"]
-        for i, gate in enumerate(self.gates):
-            lines.append(f"  {i}: {gate}")
-        return "\n".join(lines)
+        gate_strs = [str(gate) for gate in self.gates]
+        return f"QuantumCircuit({self.num_qubits} qubits):\n" + "\n".join(f"  {gate}" for gate in gate_strs)
