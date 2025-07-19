@@ -43,19 +43,18 @@ class TestQuantumGate:
     def test_gate_repr_basic(self):
         """Test gate string representation for basic gates."""
         gate = QuantumGate("x", 0)
-        assert repr(gate) == "X(0)"
+        assert repr(gate) == "X|0⟩"
 
     def test_gate_repr_two_qubit(self):
         """Test gate string representation for two-qubit gates."""
         gate = QuantumGate("cx", 0, 1)
-        assert repr(gate) == "CX(0, 1)"
+        assert repr(gate) == "CX|0, 1⟩"
 
     def test_gate_repr_with_parameters(self):
         """Test gate string representation with parameters."""
         param = Parameter(0.5, name="theta")
         gate = QuantumGate("rx", 0, parameters=[param])
-        assert "RX(0, [" in repr(gate)
-        assert "theta=0.5" in repr(gate)
+        assert "RX(theta=0.5)|0⟩" in repr(gate)
 
 
 class TestAvailableQuantumGates:

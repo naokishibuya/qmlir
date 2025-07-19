@@ -50,8 +50,9 @@ class QuantumGate:
         return AVAILABLE_QUANTUM_GATES[self.name]
 
     def __repr__(self) -> str:
+        qubits_str = ", ".join(str(q) for q in self.q)
         if self.parameters:
             param_str = ", ".join(str(p) for p in self.parameters)
-            return f"{self.name.upper()}({', '.join(map(str, self.q))}, [{param_str}])"
+            return f"{self.name.upper()}({param_str})|{qubits_str}⟩"
         else:
-            return f"{self.name.upper()}({', '.join(map(str, self.q))})"
+            return f"{self.name.upper()}|{qubits_str}⟩"

@@ -104,8 +104,8 @@ class TestQuantumCircuit:
         circuit.h(0).cx(0, 1)
         str_result = str(circuit)
         assert "QuantumCircuit(2 qubits):" in str_result
-        assert "H(0)" in str_result
-        assert "CX(0, 1)" in str_result
+        assert "H|0⟩" in str_result
+        assert "CX|0, 1⟩" in str_result
 
     def test_empty_circuit(self):
         """Test empty circuit representation."""

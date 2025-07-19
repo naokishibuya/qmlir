@@ -97,15 +97,15 @@ class TestFullPipeline:
 
 
 class TestSimulatorMethods:
-    """Test all simulator methods with integration."""
+    """Test all simulator methods."""
 
-    def test_get_samples_integration(self):
+    def test_get_counts(self):
         """Test sampling with full pipeline."""
         circuit = QuantumCircuit(2)
         circuit.h(0).cx(0, 1)
 
         simulator = JaxSimulator()
-        samples = simulator.get_samples(circuit, 100)
+        samples = simulator.get_counts(circuit, 100)
 
         assert isinstance(samples, dict)
         assert sum(samples.values()) >= 95  # Allow for some rounding
@@ -114,7 +114,7 @@ class TestSimulatorMethods:
         bell_states = sum(samples.get(state, 0) for state in ["00", "11"])
         assert bell_states >= 90  # At least 90% should be bell states
 
-    def test_calc_expval_integration(self):
+    def test_calc_expval(self):
         """Test expectation value calculation with full pipeline."""
         circuit = QuantumCircuit(1)
         circuit.h(0)
@@ -125,7 +125,7 @@ class TestSimulatorMethods:
         # H|0⟩ = (|0⟩ + |1⟩)/√2, so ⟨Z⟩ = 0
         assert jnp.allclose(expval, 0.0, atol=1e-6)
 
-    def test_state_vector_integration(self):
+    def test_state_vector(self):
         """Test state vector retrieval with full pipeline."""
         circuit = QuantumCircuit(1)
         circuit.x(0)
@@ -136,7 +136,7 @@ class TestSimulatorMethods:
         # X|0⟩ = |1⟩
         assert jnp.allclose(state, jnp.array([0.0, 1.0]))
 
-    def test_calc_probs_integration(self):
+    def test_calc_probs(self):
         """Test probability calculation with full pipeline."""
         circuit = QuantumCircuit(1)
         circuit.h(0)
@@ -148,10 +148,10 @@ class TestSimulatorMethods:
         assert jnp.allclose(probs, jnp.array([0.5, 0.5]), atol=1e-6)
 
 
-class TestOptimizationIntegration:
-    """Test optimization integration."""
+class TestOptimizationDisabledEnabled:
+    """Test optimization disabled."""
 
-    def test_optimization_disabled_integration(self):
+    def test_optimization_disabled(self):
         """Test integration with optimization disabled."""
         circuit = QuantumCircuit(2)
         circuit.x(0).x(0)  # X*X = I, should be optimized away if enabled
@@ -165,7 +165,7 @@ class TestOptimizationIntegration:
         expected_state = jnp.array([1 / jnp.sqrt(2), 1 / jnp.sqrt(2), 0.0, 0.0], dtype=jnp.complex64)
         assert jnp.allclose(state, expected_state, atol=1e-6)
 
-    def test_optimization_enabled_integration(self):
+    def test_optimization_enabled(self):
         """Test integration with optimization enabled."""
         circuit = QuantumCircuit(2)
         circuit.x(0).x(0)  # X*X = I, should be optimized away

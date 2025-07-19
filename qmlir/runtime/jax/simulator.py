@@ -4,7 +4,9 @@ This module provides the JaxSimulator class for high-performance quantum circuit
 simulation using JAX with automatic JIT compilation and optimization.
 """
 
+import jax
 import jax.numpy as jnp
+from collections import Counter
 from typing import Dict
 from ...circuit import QuantumCircuit
 from ...mlir import circuit_to_mlir, apply_passes
@@ -18,15 +20,16 @@ class JaxSimulator:
     JIT compilation and MLIR optimization.
     """
 
-    def __init__(self, optimize_circuit: bool = True):
+    def __init__(self, optimize_circuit: bool = True, seed: int = 0):
         """Initialize the JAX simulator.
 
         Args:
             optimize_circuit: Whether to apply MLIR optimization passes
         """
         self.optimize_circuit = optimize_circuit
+        self.rng_key = jax.random.PRNGKey(seed)  # Random key for reproducibility
 
-    def get_samples(self, circuit: QuantumCircuit, shots: int = 1000) -> Dict[str, int]:
+    def get_counts(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
         """Sample measurements from the circuit by running it multiple times.
 
         Args:
@@ -36,14 +39,17 @@ class JaxSimulator:
         Returns:
             Dictionary mapping bitstrings to counts
         """
-        # For now, return deterministic probabilities as counts
-        # Future: implement actual sampling with JAX random
+        self.rng_key, subkey = jax.random.split(self.rng_key)
+
+        # Calculate probabilities of measurement outcomes
         probs = self.calc_probs(circuit)
-        counts = {}
-        for i, prob in enumerate(probs):
-            state = format(i, f"0{circuit.num_qubits}b")
-            counts[state] = int(prob * shots)
-        return counts
+        num_states = probs.shape[0]
+
+        # Sample bitstrings based on probabilities
+        samples = jax.random.choice(subkey, num_states, shape=(shots,), p=probs)
+        bitstrings = [format(i, f"0{int(jnp.log2(num_states))}b") for i in samples]
+
+        return dict(Counter(bitstrings))
 
     def calc_expval(self, circuit: QuantumCircuit, observable: str) -> float:
         """Calculate expectation value of an observable.

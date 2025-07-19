@@ -23,7 +23,7 @@ class TestJaxSimulator:
         """Test sampling from empty circuit."""
         simulator = JaxSimulator()
         circuit = QuantumCircuit(2)
-        samples = simulator.get_samples(circuit, 10)
+        samples = simulator.get_counts(circuit, 10)
         assert isinstance(samples, dict)
         assert sum(samples.values()) == 10
         assert all(sample in ["00", "01", "10", "11"] for sample in samples.keys())
@@ -33,7 +33,7 @@ class TestJaxSimulator:
         simulator = JaxSimulator()
         circuit = QuantumCircuit(2)
         circuit.h(0).cx(0, 1)
-        samples = simulator.get_samples(circuit, 100)
+        samples = simulator.get_counts(circuit, 100)
         assert isinstance(samples, dict)
         assert sum(samples.values()) >= 95  # Allow for some rounding
         # Bell state should primarily produce |00⟩ and |11⟩
