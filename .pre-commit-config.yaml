@@ -40,3 +40,11 @@ repos:
         always_run: true
         args: [tests/, -x, --tb=short, -q]
         stages: [pre-commit]
+
+      - id: coverage-check
+        name: Block push if coverage < 90%
+        entry: bash scripts/check_coverage.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [push]

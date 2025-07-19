@@ -51,3 +51,6 @@ build/
 venv/
 *.egg-info/
 __pycache__/
+
+# coverage
+.coverage
