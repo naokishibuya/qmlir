@@ -3,6 +3,7 @@
 import pytest
 import jax.numpy as jnp
 from qmlir import QuantumCircuit, Parameter, JaxSimulator
+from qmlir.operator import X, H, CX, CZ, RX, RY, RZ
 from qmlir.mlir import circuit_to_mlir, apply_passes
 
 
@@ -13,7 +14,9 @@ class TestFullPipeline:
         """Test complete Bell state pipeline."""
         # 1. Circuit construction
         circuit = QuantumCircuit(2)
-        circuit.h(0).cx(0, 1)
+        q0, q1 = circuit.qubits
+        H(q0)
+        CX(q0, q1)  # Create Bell state |Φ+⟩
 
         # 2. MLIR transpilation
         mlir = circuit_to_mlir(circuit)
@@ -26,8 +29,8 @@ class TestFullPipeline:
 
         # 4. Simulation
         simulator = JaxSimulator()
-        state = simulator.state_vector(circuit)
-        probs = simulator.calc_probs(circuit)
+        state = simulator.statevector(circuit)
+        probs = simulator.probabilities(circuit)
 
         # 5. Verification
         expected_state = jnp.array([1 / jnp.sqrt(2), 0.0, 0.0, 1 / jnp.sqrt(2)])
@@ -40,8 +43,8 @@ class TestFullPipeline:
         """Test complete parametric circuit pipeline."""
         # 1. Circuit construction with parameters
         circuit = QuantumCircuit(1)
-        param = Parameter(0.5, name="theta")
-        circuit.rx(0, param)
+        q0 = circuit.qubits[0]
+        RX(0.5)(q0)  # Rotate around X by 0.5 radians
 
         # 2. MLIR transpilation
         mlir = circuit_to_mlir(circuit)
@@ -54,8 +57,8 @@ class TestFullPipeline:
 
         # 4. Simulation
         simulator = JaxSimulator()
-        state = simulator.state_vector(circuit)
-        probs = simulator.calc_probs(circuit)
+        state = simulator.statevector(circuit)
+        probs = simulator.probabilities(circuit)
 
         # 5. Verification
         expected_state = jnp.array([0.9689124, -0.24740396j])
@@ -68,10 +71,12 @@ class TestFullPipeline:
         """Test complete complex circuit pipeline."""
         # 1. Complex circuit construction
         circuit = QuantumCircuit(3)
-        param1 = Parameter(0.5, name="theta1")
-        param2 = Parameter(0.3, name="theta2")
-
-        circuit.h(0).cx(0, 1).rx(2, param1).ry(1, param2).cz(0, 2)
+        q0, q1, q2 = circuit.qubits
+        H(q0)
+        CX(q0, q1)
+        RX(0.5)(q2)
+        RY(0.3)(q1)
+        CZ(q0, q2)
 
         # 2. MLIR transpilation
         mlir = circuit_to_mlir(circuit)
@@ -87,8 +92,8 @@ class TestFullPipeline:
 
         # 4. Simulation
         simulator = JaxSimulator()
-        state = simulator.state_vector(circuit)
-        probs = simulator.calc_probs(circuit)
+        state = simulator.statevector(circuit)
+        probs = simulator.probabilities(circuit)
 
         # 5. Verification
         assert len(state) == 8
@@ -102,13 +107,15 @@ class TestSimulatorMethods:
     def test_get_counts(self):
         """Test sampling with full pipeline."""
         circuit = QuantumCircuit(2)
-        circuit.h(0).cx(0, 1)
+        q0, q1 = circuit.qubits
+        H(q0)
+        CX(q0, q1)  # Create Bell state |Φ+⟩
 
         simulator = JaxSimulator()
-        samples = simulator.get_counts(circuit, 100)
+        samples = simulator.measure(circuit, 100)
 
         assert isinstance(samples, dict)
-        assert sum(samples.values()) >= 95  # Allow for some rounding
+        assert sum(samples.values()) == 100
         # Bell state should primarily produce |00⟩ and |11⟩
         # Allow for some other states due to sampling noise
         bell_states = sum(samples.get(state, 0) for state in ["00", "11"])
@@ -117,10 +124,11 @@ class TestSimulatorMethods:
     def test_calc_expval(self):
         """Test expectation value calculation with full pipeline."""
         circuit = QuantumCircuit(1)
-        circuit.h(0)
+        q0 = circuit.qubits[0]
+        H(q0)  # Prepare superposition
 
         simulator = JaxSimulator()
-        expval = simulator.calc_expval(circuit, "Z")
+        expval = simulator.expectation(circuit, "Z")
 
         # H|0⟩ = (|0⟩ + |1⟩)/√2, so ⟨Z⟩ = 0
         assert jnp.allclose(expval, 0.0, atol=1e-6)
@@ -128,10 +136,11 @@ class TestSimulatorMethods:
     def test_state_vector(self):
         """Test state vector retrieval with full pipeline."""
         circuit = QuantumCircuit(1)
-        circuit.x(0)
+        q0 = circuit.qubits[0]
+        X(q0)  # Prepare |1⟩ state
 
         simulator = JaxSimulator()
-        state = simulator.state_vector(circuit)
+        state = simulator.statevector(circuit)
 
         # X|0⟩ = |1⟩
         assert jnp.allclose(state, jnp.array([0.0, 1.0]))
@@ -139,10 +148,11 @@ class TestSimulatorMethods:
     def test_calc_probs(self):
         """Test probability calculation with full pipeline."""
         circuit = QuantumCircuit(1)
-        circuit.h(0)
+        q0 = circuit.qubits[0]
+        H(q0)  # Prepare superposition
 
         simulator = JaxSimulator()
-        probs = simulator.calc_probs(circuit)
+        probs = simulator.probabilities(circuit)
 
         # H|0⟩ gives equal probabilities
         assert jnp.allclose(probs, jnp.array([0.5, 0.5]), atol=1e-6)
@@ -154,11 +164,13 @@ class TestOptimizationDisabledEnabled:
     def test_optimization_disabled(self):
         """Test integration with optimization disabled."""
         circuit = QuantumCircuit(2)
-        circuit.x(0).x(0)  # X*X = I, should be optimized away if enabled
-        circuit.h(1)
+        q0, q1 = circuit.qubits
+        X(q0)
+        X(q0)  # X*X = I, should not be optimized away
+        H(q1)
 
         simulator = JaxSimulator(optimize_circuit=False)
-        state = simulator.state_vector(circuit)
+        state = simulator.statevector(circuit)
 
         # Should be equivalent to just H on qubit 1
         # The actual state shows H applied to qubit 0: [1/sqrt(2), 1/sqrt(2), 0, 0]
@@ -168,11 +180,13 @@ class TestOptimizationDisabledEnabled:
     def test_optimization_enabled(self):
         """Test integration with optimization enabled."""
         circuit = QuantumCircuit(2)
-        circuit.x(0).x(0)  # X*X = I, should be optimized away
-        circuit.h(1)
+        q0, q1 = circuit.qubits
+        X(q0)
+        X(q0)  # X*X = I, should be optimized away
+        H(q1)
 
         simulator = JaxSimulator(optimize_circuit=True)
-        state = simulator.state_vector(circuit)
+        state = simulator.statevector(circuit)
 
         # Should be equivalent to just H on qubit 1
         # When optimization is enabled, X*X is optimized away, so we get H(1)
@@ -188,15 +202,16 @@ class TestErrorHandling:
         """Test error handling for invalid qubit index."""
         circuit = QuantumCircuit(1)
 
-        with pytest.raises(ValueError, match="Qubit index 1 is out of bounds"):
-            circuit.x(1)
+        with pytest.raises(IndexError, match="list index out of range"):
+            circuit.qubits[1]
 
     def test_invalid_gate_parameters(self):
         """Test error handling for invalid gate parameters."""
         circuit = QuantumCircuit(2)
+        q0, _ = circuit.qubits
 
-        with pytest.raises(ValueError, match="Control and target qubits must be different"):
-            circuit.cx(0, 0)
+        with pytest.raises(ValueError, match="Control and target must differ."):
+            CX(q0, q0)
 
     def test_invalid_mlir(self):
         """Test error handling for invalid MLIR."""
@@ -215,32 +230,40 @@ class TestPerformance:
 
         # Add many gates
         for i in range(10):
-            circuit.h(i % 4).cx(i % 4, (i + 1) % 4)
+            q0 = circuit.qubits[i % 4]
+            q1 = circuit.qubits[(i + 1) % 4]
+            H(q0)
+            CX(q0, q1)
 
         simulator = JaxSimulator()
 
         # Should complete without errors
-        state = simulator.state_vector(circuit)
+        state = simulator.statevector(circuit)
         assert len(state) == 16
 
-        probs = simulator.calc_probs(circuit)
+        probs = simulator.probabilities(circuit)
         assert len(probs) == 16
         assert jnp.allclose(jnp.sum(probs), 1.0, atol=1e-6)
 
     def test_multiple_parameters_performance(self):
         """Test performance with multiple parameters."""
         circuit = QuantumCircuit(2)
+        q0, q1 = circuit.qubits
 
         # Add multiple parameters
-        params = [Parameter(0.1 * i, name=f"theta{i}") for i in range(5)]
-        circuit.rx(0, params[0]).ry(1, params[1]).rz(0, params[2])
+        p0, p1, p2, p3, p4 = [Parameter(0.1 * i, name=f"theta{i}") for i in range(5)]
+        RX(p0)(q0)
+        RY(p1)(q1)
+        RZ(p2)(q0)
+        RX(p3)(q1)
+        RY(p4)(q0)
 
         simulator = JaxSimulator()
 
         # Should complete without errors
-        state = simulator.state_vector(circuit)
+        state = simulator.statevector(circuit)
         assert len(state) == 4
 
-        probs = simulator.calc_probs(circuit)
+        probs = simulator.probabilities(circuit)
         assert len(probs) == 4
         assert jnp.allclose(jnp.sum(probs), 1.0, atol=1e-6)

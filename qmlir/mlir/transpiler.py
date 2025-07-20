@@ -6,6 +6,7 @@ representation using the quantum dialect, and provides optimization capabilities
 
 import subprocess
 from ..circuit import QuantumCircuit
+from ..operator import Operator
 from .config import get_quantum_opt_path  # This will also ensure LLVM/MLIR bindings
 from mlir import ir
 
@@ -20,26 +21,22 @@ def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str
     Returns:
         MLIR string representation of the circuit
     """
-    # Phase 1: Collect unique parameters using simplified approach
     param_index_map = {}
-    for gate in circuit.gates:
-        for param in gate.parameters:
+    for operator in circuit.operators:
+        if not isinstance(operator, Operator):
+            raise AssertionError(f"Unknown operator: {operator.__class__.__name__}")
+        for param in operator.parameters:
             if param.id not in param_index_map:
                 param_index_map[param.id] = len(param_index_map)
 
     with ir.Context() as ctx, ir.Location.unknown():
-        # Allow unregistered dialects for now
         ctx.allow_unregistered_dialects = True
         ctx.enable_multithreading(False)
 
         module = ir.Module.create()
         with ir.InsertionPoint(module.body):
-            # Create function type with parameters
-            f64_type = ir.F64Type.get()
-            func_args = [f64_type] * len(param_index_map)
-            func_type = ir.FunctionType.get(func_args, [])
-
-            # Create function using lower-level API
+            f64 = ir.F64Type.get()
+            func_type = ir.FunctionType.get([f64] * len(param_index_map), [])
             func_op = ir.Operation.create(
                 "func.func",
                 attributes={
@@ -49,77 +46,29 @@ def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str
                 regions=1,
             )
 
-            # Get the function body
-            func_body = func_op.regions[0].blocks.append()
-
-            # Add function arguments to the block
+            block = func_op.regions[0].blocks.append()
             for _ in range(len(param_index_map)):
-                func_body.add_argument(f64_type, ir.Location.unknown())
+                block.add_argument(f64, ir.Location.unknown())
 
-            with ir.InsertionPoint(func_body):
-                # Allocate all qubits upfront to ensure consistent ordering
-                i32_type = ir.IntegerType.get_signless(32)
-                ssa_qubits = {}
+            with ir.InsertionPoint(block):
+                i32 = ir.IntegerType.get_signless(32)
+                ssa_qubits = {
+                    i: ir.Operation.create("quantum.alloc", results=[i32]).result for i in range(circuit.num_qubits)
+                }
 
-                # Pre-allocate all qubits
-                for i in range(circuit.num_qubits):
-                    op = ir.Operation.create("quantum.alloc", results=[i32_type], attributes={})
-                    ssa_qubits[i] = op.result
+                for operator in circuit.operators:
+                    name = operator.name.lower()
+                    qubits = [ssa_qubits[q.index] for q in operator.qubits]
+                    operands = qubits.copy()
 
-                def get_ssa(idx):
-                    return ssa_qubits[idx]
+                    if operator.parameters:
+                        for p in operator.parameters:
+                            idx = param_index_map[p.id]
+                            operands.append(block.arguments[idx])
 
-                # Generate quantum operations
-                for gate in circuit.gates:
-                    if gate.name == "i":
-                        ir.Operation.create("quantum.i", operands=[get_ssa(gate.q[0])], attributes={})
-                    elif gate.name == "x":
-                        ir.Operation.create("quantum.x", operands=[get_ssa(gate.q[0])], attributes={})
-                    elif gate.name == "y":
-                        ir.Operation.create("quantum.y", operands=[get_ssa(gate.q[0])], attributes={})
-                    elif gate.name == "z":
-                        ir.Operation.create("quantum.z", operands=[get_ssa(gate.q[0])], attributes={})
-                    elif gate.name == "h":
-                        ir.Operation.create("quantum.h", operands=[get_ssa(gate.q[0])], attributes={})
-                    elif gate.name == "s":
-                        ir.Operation.create("quantum.s", operands=[get_ssa(gate.q[0])], attributes={})
-                    elif gate.name == "t":
-                        ir.Operation.create("quantum.t", operands=[get_ssa(gate.q[0])], attributes={})
-                    elif gate.name == "sdg":
-                        ir.Operation.create("quantum.sdg", operands=[get_ssa(gate.q[0])], attributes={})
-                    elif gate.name == "tdg":
-                        ir.Operation.create("quantum.tdg", operands=[get_ssa(gate.q[0])], attributes={})
-                    elif gate.name == "cx":
-                        ir.Operation.create(
-                            "quantum.cx", operands=[get_ssa(gate.q[0]), get_ssa(gate.q[1])], attributes={}
-                        )
-                    elif gate.name == "cy":
-                        ir.Operation.create(
-                            "quantum.cy", operands=[get_ssa(gate.q[0]), get_ssa(gate.q[1])], attributes={}
-                        )
-                    elif gate.name == "cz":
-                        ir.Operation.create(
-                            "quantum.cz", operands=[get_ssa(gate.q[0]), get_ssa(gate.q[1])], attributes={}
-                        )
-                    # Rotation gates
-                    elif gate.name == "rx":
-                        param_idx = param_index_map[gate.parameters[0].id]
-                        param_value = func_body.arguments[param_idx]
-                        # For now, generate a placeholder comment
-                        ir.Operation.create("quantum.rx", operands=[get_ssa(gate.q[0]), param_value], attributes={})
-                    elif gate.name == "ry":
-                        param_idx = param_index_map[gate.parameters[0].id]
-                        param_value = func_body.arguments[param_idx]
-                        ir.Operation.create("quantum.ry", operands=[get_ssa(gate.q[0]), param_value], attributes={})
-                    elif gate.name == "rz":
-                        param_idx = param_index_map[gate.parameters[0].id]
-                        param_value = func_body.arguments[param_idx]
-                        ir.Operation.create("quantum.rz", operands=[get_ssa(gate.q[0]), param_value], attributes={})
-                    else:
-                        raise ValueError(f"Unknown gate: {gate.name}")
+                    ir.Operation.create(f"quantum.{name}", operands=operands)
 
-                # Return from function
-                ir.Operation.create("func.return", operands=[], attributes={})
+                ir.Operation.create("func.return")
 
         return str(module)
 
@@ -139,13 +88,10 @@ def apply_passes(mlir_code, *args, timeout=10):
         RuntimeError: If quantum-opt is not found or optimization fails.
     """
     quantum_opt_path = get_quantum_opt_path()
-
-    # Default to self-inverse cancellation pass if no args provided
     if not args:
         args = ["--quantum-cancel-self-inverse"]
 
     command = [quantum_opt_path] + list(args)
-
     result = subprocess.run(command, input=mlir_code, capture_output=True, text=True, timeout=timeout)
 
     if result.returncode != 0:

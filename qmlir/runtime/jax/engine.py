@@ -10,6 +10,7 @@ import re
 from enum import IntEnum
 from typing import Dict, List, Optional
 
+
 # Configure JAX for 64-bit precision
 jax.config.update("jax_enable_x64", True)
 

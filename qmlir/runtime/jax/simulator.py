@@ -29,7 +29,7 @@ class JaxSimulator:
         self.optimize_circuit = optimize_circuit
         self.rng_key = jax.random.PRNGKey(seed)  # Random key for reproducibility
 
-    def get_counts(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
+    def measure(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
         """Sample measurements from the circuit by running it multiple times.
 
         Args:
@@ -42,7 +42,7 @@ class JaxSimulator:
         self.rng_key, subkey = jax.random.split(self.rng_key)
 
         # Calculate probabilities of measurement outcomes
-        probs = self.calc_probs(circuit)
+        probs = self.probabilities(circuit)
         num_states = probs.shape[0]
 
         # Sample bitstrings based on probabilities
@@ -51,7 +51,7 @@ class JaxSimulator:
 
         return dict(Counter(bitstrings))
 
-    def calc_expval(self, circuit: QuantumCircuit, observable: str) -> float:
+    def expectation(self, circuit: QuantumCircuit, observable: str) -> float:
         """Calculate expectation value of an observable.
 
         Args:
@@ -62,7 +62,7 @@ class JaxSimulator:
             Expectation value as float
         """
         # For now, implement basic Pauli observables
-        state_vector = self.state_vector(circuit)
+        state_vector = self.statevector(circuit)
 
         if observable == "Z":
             # Single qubit Z expectation
@@ -82,7 +82,7 @@ class JaxSimulator:
         else:
             raise ValueError(f"Observable {observable} not yet implemented")
 
-    def state_vector(self, circuit: QuantumCircuit) -> jnp.ndarray:
+    def statevector(self, circuit: QuantumCircuit) -> jnp.ndarray:
         """Get the final state vector of the circuit.
 
         Args:
@@ -94,7 +94,7 @@ class JaxSimulator:
         results = self._simulate_circuit(circuit)
         return results["final_state"]
 
-    def calc_probs(self, circuit: QuantumCircuit) -> jnp.ndarray:
+    def probabilities(self, circuit: QuantumCircuit) -> jnp.ndarray:
         """Calculate measurement probabilities.
 
         Args:
@@ -130,10 +130,10 @@ class JaxSimulator:
         # Step 3: Collect parameter values from circuit
         param_values = []
         param_ids_seen = set()
-        for gate in circuit.gates:
+        for gate in circuit.operators:
             for param in gate.parameters:
                 if param.id not in param_ids_seen:
-                    param_values.append(param.initial_value)
+                    param_values.append(param.value)
                     param_ids_seen.add(param.id)
 
         # Step 4: Simulate with JAX runtime

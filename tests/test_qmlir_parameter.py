@@ -9,14 +9,14 @@ class TestParameter:
     def test_parameter_creation(self):
         """Test basic parameter creation."""
         param = Parameter(0.5, name="theta")
-        assert param.initial_value == 0.5
+        assert param.value == 0.5
         assert param.name == "theta"
         assert param.id is not None
 
     def test_parameter_creation_without_name(self):
         """Test parameter creation without explicit name."""
         param = Parameter(0.5)
-        assert param.initial_value == 0.5
+        assert param.value == 0.5
         assert param.name.startswith("param_")
         assert param.id is not None
 
@@ -62,14 +62,19 @@ class TestParameter:
     def test_parameter_float_conversion(self):
         """Test parameter float conversion."""
         param = Parameter(0.5, name="theta")
-        assert param.initial_value == 0.5
+        assert param.value == 0.5
 
     def test_parameter_negative_value(self):
         """Test parameter with negative value."""
         param = Parameter(-0.5, name="negative_theta")
-        assert param.initial_value == -0.5
+        assert param.value == -0.5
+
+    def test_parameter_negative_param(self):
+        """Test parameter with negative value."""
+        param = -Parameter(0.5, name="negative_theta")
+        assert param.value == -0.5
 
     def test_parameter_zero_value(self):
         """Test parameter with zero value."""
         param = Parameter(0.0, name="zero_theta")
-        assert param.initial_value == 0.0
+        assert param.value == 0.0
