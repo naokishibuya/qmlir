@@ -5,18 +5,31 @@ before they are compiled to MLIR.
 """
 
 from typing import List
-from .bit import QuantumBit
 from .operator import Operator
 
 
 class QuantumCircuit:
+    _active_circuit = None
+
     def __init__(self, num_qubits: int):
         if num_qubits <= 0:
             raise ValueError("Quantum circuit must have at least one qubit.")
 
         self.num_qubits = num_qubits
         self.operators: List[Operator] = []
-        self.qubits = [QuantumBit(i, self) for i in range(num_qubits)]
+
+    def __enter__(self):
+        if QuantumCircuit._active_circuit is not None:
+            raise RuntimeError("Only one active quantum circuit can exist at a time.")
+        QuantumCircuit._active_circuit = self
+        return self
+
+    def __exit__(self, *ignored):
+        QuantumCircuit._active_circuit = None
+
+    @classmethod
+    def active_circuit(cls):
+        return cls._active_circuit
 
     def __str__(self):
         lines = [f"QuantumCircuit({self.num_qubits} qubits):"]

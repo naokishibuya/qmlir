@@ -58,7 +58,7 @@ def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str
 
                 for operator in circuit.operators:
                     name = operator.name.lower()
-                    qubits = [ssa_qubits[q.index] for q in operator.qubits]
+                    qubits = [ssa_qubits[q] for q in operator.qubits]
                     operands = qubits.copy()
 
                     if operator.parameters:

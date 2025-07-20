@@ -1,5 +1,4 @@
 from typing import Tuple
-from .bit import QuantumBit
 from .parameter import Parameter
 
 
@@ -12,35 +11,31 @@ class Operator:
     def __init__(
         self,
         name: str,
-        qubits: Tuple[QuantumBit, ...],
+        qubits: Tuple[int, ...],
         parameters: Tuple[Parameter, ...] = (),
         *,
         unitary: bool = True,  # U^† U = I
         hermitian: bool = False,  # U^† = U
-        inverse_operator=None,  # Function to compute the inverse of this operator
+        self_inverse: bool = False,  # U^2 = I
     ):
-        # Validate parameters
-        if not all(isinstance(p, Parameter) for p in parameters):
-            raise TypeError("Operator parameters must be instances of Parameter.")
+        # Add to the circuit
+        from .circuit import QuantumCircuit
+
+        circuit = QuantumCircuit.active_circuit()
+        if circuit is not None:
+            if not all(0 <= q < circuit.num_qubits for q in qubits):
+                raise ValueError(f"Qubits {qubits} out of range for circuit with {circuit.num_qubits} qubits.")
+            circuit.operators.append(self)
 
         self.name = name
         self.qubits = qubits
         self.parameters = parameters
         self.unitary = unitary
         self.hermitian = hermitian
-        self.inverse_operator = inverse_operator
-
-        # add to the circuit
-        circuit = qubits[0].circuit
-        if not all(q.circuit == circuit for q in qubits):
-            raise ValueError("All qubits must belong to the same quantum circuit.")
-        circuit.operators.append(self)
-
-    def inverse(self):
-        return self.inverse_operator(*self.qubits) if self.inverse_operator else self
+        self.self_inverse = self_inverse
 
     def __repr__(self):
-        qstr = ", ".join(f"q{q.index}" for q in self.qubits)
+        qstr = ", ".join(f"q{q}" for q in self.qubits)
         pstr = f"({', '.join(map(str, self.parameters))})" if self.parameters else ""
         return f"{self.name}{pstr}|{qstr}⟩"
 
@@ -51,19 +46,19 @@ class Operator:
 
 
 def I(*qubits):  # noqa: E743
-    return Operator("I", qubits, hermitian=True)
+    return Operator("I", qubits, hermitian=True, self_inverse=True)
 
 
 def X(*qubits):
-    return Operator("X", qubits, hermitian=True)
+    return Operator("X", qubits, hermitian=True, self_inverse=True)
 
 
 def Y(*qubits):
-    return Operator("Y", qubits, hermitian=True)
+    return Operator("Y", qubits, hermitian=True, self_inverse=True)
 
 
 def Z(*qubits):
-    return Operator("Z", qubits, hermitian=True)
+    return Operator("Z", qubits, hermitian=True, self_inverse=True)
 
 
 # --------------------------------------------------------------------------------
@@ -72,7 +67,7 @@ def Z(*qubits):
 
 
 def H(*qubits):
-    return Operator("H", qubits, hermitian=True)
+    return Operator("H", qubits, hermitian=True, self_inverse=True)
 
 
 # --------------------------------------------------------------------------------
@@ -83,37 +78,37 @@ def H(*qubits):
 def CX(control, target):
     if control == target:
         raise ValueError("Control and target must differ.")
-    return Operator("CX", (control, target), hermitian=True)
+    return Operator("CX", (control, target), hermitian=True, self_inverse=True)
 
 
 def CY(control, target):
     if control == target:
         raise ValueError("Control and target must differ.")
-    return Operator("CY", (control, target), hermitian=True)
+    return Operator("CY", (control, target), hermitian=True, self_inverse=True)
 
 
 def CZ(control, target):
     if control == target:
         raise ValueError("Control and target must differ.")
-    return Operator("CZ", (control, target), hermitian=True)
+    return Operator("CZ", (control, target), hermitian=True, self_inverse=True)
 
 
 def CCX(control1, control2, target):
     if control1 == control2 or control1 == target or control2 == target:
         raise ValueError("All qubits must be distinct.")
-    return Operator("CCX", (control1, control2, target), hermitian=True)
+    return Operator("CCX", (control1, control2, target), hermitian=True, self_inverse=True)
 
 
 def CCY(control1, control2, target):
     if control1 == control2 or control1 == target or control2 == target:
         raise ValueError("All qubits must be distinct.")
-    return Operator("CCY", (control1, control2, target), hermitian=True)
+    return Operator("CCY", (control1, control2, target), hermitian=True, self_inverse=True)
 
 
 def CCZ(control1, control2, target):
     if control1 == control2 or control1 == target or control2 == target:
         raise ValueError("All qubits must be distinct.")
-    return Operator("CCZ", (control1, control2, target), hermitian=True)
+    return Operator("CCZ", (control1, control2, target), hermitian=True, self_inverse=True)
 
 
 # --------------------------------------------------------------------------------
@@ -122,19 +117,19 @@ def CCZ(control1, control2, target):
 
 
 def S(*qubits):
-    return Operator("S", qubits, inverse_operator=Sdg)
+    return Operator("S", qubits)
 
 
 def Sdg(*qubits):
-    return Operator("Sdg", qubits, inverse_operator=S)
+    return Operator("Sdg", qubits)
 
 
 def T(*qubits):
-    return Operator("T", qubits, inverse_operator=Tdg)
+    return Operator("T", qubits)
 
 
 def Tdg(*qubits):
-    return Operator("Tdg", qubits, inverse_operator=T)
+    return Operator("Tdg", qubits)
 
 
 # --------------------------------------------------------------------------------
@@ -144,14 +139,14 @@ def Tdg(*qubits):
 
 def RX(theta):
     parameter = theta if isinstance(theta, Parameter) else Parameter(theta)
-    return lambda *qubits: Operator("RX", qubits, (parameter,), inverse_operator=lambda *q: RX(-theta)(*q))
+    return lambda *qubits: Operator("RX", qubits, (parameter,))
 
 
 def RY(theta):
     parameter = theta if isinstance(theta, Parameter) else Parameter(theta)
-    return lambda *qubits: Operator("RY", qubits, (parameter,), inverse_operator=lambda *q: RY(-theta)(*q))
+    return lambda *qubits: Operator("RY", qubits, (parameter,))
 
 
 def RZ(theta):
     parameter = theta if isinstance(theta, Parameter) else Parameter(theta)
-    return lambda *qubits: Operator("RZ", qubits, (parameter,), inverse_operator=lambda *q: RZ(-theta)(*q))
+    return lambda *qubits: Operator("RZ", qubits, (parameter,))

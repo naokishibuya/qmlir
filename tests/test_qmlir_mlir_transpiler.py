@@ -6,24 +6,23 @@ from qmlir.mlir.transpiler import circuit_to_mlir
 
 
 def test_basic_operator_transpilation():
-    qc = QuantumCircuit(2)
-    q0, q1 = qc.qubits
-    X(q0)
-    H(q1)
-    CX(q0, q1)
-    mlir_code = circuit_to_mlir(qc)
+    circuit = QuantumCircuit(2)
+    with circuit:
+        X(0)
+        H(1)
+        CX(0, 1)
+    mlir_code = circuit_to_mlir(circuit)
     assert "quantum.x" in mlir_code
     assert "quantum.h" in mlir_code
     assert "quantum.cx" in mlir_code
 
 
 def test_rotation_operator_transpilation():
-    qc = QuantumCircuit(1)
-    q0 = qc.qubits[0]
-    theta = 1.57
-    RX(theta)(q0)
-    RZ(3.14)(q0)
-    mlir_code = circuit_to_mlir(qc)
+    with QuantumCircuit(1) as circuit:
+        theta = 1.57
+        RX(theta)(0)
+        RZ(3.14)(0)
+    mlir_code = circuit_to_mlir(circuit)
     assert "quantum.rx" in mlir_code
     assert "quantum.rz" in mlir_code
     assert "func.func" in mlir_code
@@ -31,12 +30,12 @@ def test_rotation_operator_transpilation():
 
 
 def test_multiple_qubits_allocated():
-    qc = QuantumCircuit(3)
-    q0, q1, q2 = qc.qubits
-    H(q0)
-    X(q1)
-    CX(q1, q2)
-    mlir_code = circuit_to_mlir(qc)
+    circuit = QuantumCircuit(3)
+    with circuit:
+        H(0)
+        X(1)
+        CX(1, 2)
+    mlir_code = circuit_to_mlir(circuit)
     assert mlir_code.count("quantum.alloc") == 3
     assert "quantum.h" in mlir_code
     assert "quantum.x" in mlir_code
@@ -55,15 +54,11 @@ class DummyMetadata:
 
 def test_unknown_operator_raises():
     qc = QuantumCircuit(1)
-    q0 = qc.qubits[0]
 
     class DummyOperator:
         metadata = DummyMetadata(
             name="Dummy", kind="dummy", long_name="Dummy Operator", hermitian=False, self_inverse=False
         )
-        name = "dummy"
-        parameters = []
-        qubits = (q0,)
 
     qc.operators.append(DummyOperator())
 

@@ -1,4 +1,3 @@
-from .bit import QuantumBit
 from .circuit import QuantumCircuit
 from .operator import Operator
 from .parameter import Parameter
@@ -10,5 +9,4 @@ __all__ = [
     "Operator",
     "Parameter",
     "QuantumCircuit",
-    "QuantumBit",
 ]

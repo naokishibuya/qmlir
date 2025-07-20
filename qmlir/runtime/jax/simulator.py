@@ -14,31 +14,12 @@ from .engine import simulate_from_mlir
 
 
 class JaxSimulator:
-    """JAX-based quantum circuit simulator.
-
-    Provides high-performance quantum circuit simulation using JAX with automatic
-    JIT compilation and MLIR optimization.
-    """
-
     def __init__(self, optimize_circuit: bool = True, seed: int = 0):
-        """Initialize the JAX simulator.
-
-        Args:
-            optimize_circuit: Whether to apply MLIR optimization passes
-        """
         self.optimize_circuit = optimize_circuit
         self.rng_key = jax.random.PRNGKey(seed)  # Random key for reproducibility
 
     def measure(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
-        """Sample measurements from the circuit by running it multiple times.
-
-        Args:
-            circuit: The quantum circuit to sample from
-            shots: Number of shots to run
-
-        Returns:
-            Dictionary mapping bitstrings to counts
-        """
+        """Sample measurements from the circuit by running it multiple times."""
         self.rng_key, subkey = jax.random.split(self.rng_key)
 
         # Calculate probabilities of measurement outcomes
@@ -52,15 +33,7 @@ class JaxSimulator:
         return dict(Counter(bitstrings))
 
     def expectation(self, circuit: QuantumCircuit, observable: str) -> float:
-        """Calculate expectation value of an observable.
-
-        Args:
-            circuit: The quantum circuit
-            observable: Observable as string (e.g., "ZZ", "X", "Y")
-
-        Returns:
-            Expectation value as float
-        """
+        """Calculate expectation value of an observable."""
         # For now, implement basic Pauli observables
         state_vector = self.statevector(circuit)
 
@@ -83,26 +56,12 @@ class JaxSimulator:
             raise ValueError(f"Observable {observable} not yet implemented")
 
     def statevector(self, circuit: QuantumCircuit) -> jnp.ndarray:
-        """Get the final state vector of the circuit.
-
-        Args:
-            circuit: The quantum circuit
-
-        Returns:
-            Final state vector as JAX array
-        """
+        """Get the final state vector of the circuit."""
         results = self._simulate_circuit(circuit)
         return results["final_state"]
 
     def probabilities(self, circuit: QuantumCircuit) -> jnp.ndarray:
-        """Calculate measurement probabilities.
-
-        Args:
-            circuit: The quantum circuit
-
-        Returns:
-            Measurement probabilities as JAX array
-        """
+        """Calculate measurement probabilities."""
         results = self._simulate_circuit(circuit)
         return results["probabilities"]
 

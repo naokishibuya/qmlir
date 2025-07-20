@@ -14,9 +14,9 @@ class TestFullPipeline:
         """Test complete Bell state pipeline."""
         # 1. Circuit construction
         circuit = QuantumCircuit(2)
-        q0, q1 = circuit.qubits
-        H(q0)
-        CX(q0, q1)  # Create Bell state |Φ+⟩
+        with circuit:
+            H(0)
+            CX(0, 1)  # Create Bell state |Φ+⟩
 
         # 2. MLIR transpilation
         mlir = circuit_to_mlir(circuit)
@@ -43,8 +43,8 @@ class TestFullPipeline:
         """Test complete parametric circuit pipeline."""
         # 1. Circuit construction with parameters
         circuit = QuantumCircuit(1)
-        q0 = circuit.qubits[0]
-        RX(0.5)(q0)  # Rotate around X by 0.5 radians
+        with circuit:
+            RX(0.5)(0)  # Rotate around X by 0.5 radians
 
         # 2. MLIR transpilation
         mlir = circuit_to_mlir(circuit)
@@ -71,12 +71,12 @@ class TestFullPipeline:
         """Test complete complex circuit pipeline."""
         # 1. Complex circuit construction
         circuit = QuantumCircuit(3)
-        q0, q1, q2 = circuit.qubits
-        H(q0)
-        CX(q0, q1)
-        RX(0.5)(q2)
-        RY(0.3)(q1)
-        CZ(q0, q2)
+        with circuit:
+            H(0)
+            CX(0, 1)
+            RX(0.5)(2)
+            RY(0.3)(1)
+            CZ(0, 2)
 
         # 2. MLIR transpilation
         mlir = circuit_to_mlir(circuit)
@@ -107,9 +107,9 @@ class TestSimulatorMethods:
     def test_get_counts(self):
         """Test sampling with full pipeline."""
         circuit = QuantumCircuit(2)
-        q0, q1 = circuit.qubits
-        H(q0)
-        CX(q0, q1)  # Create Bell state |Φ+⟩
+        with circuit:
+            H(0)
+            CX(0, 1)  # Create Bell state |Φ+⟩
 
         simulator = JaxSimulator()
         samples = simulator.measure(circuit, 100)
@@ -124,8 +124,8 @@ class TestSimulatorMethods:
     def test_calc_expval(self):
         """Test expectation value calculation with full pipeline."""
         circuit = QuantumCircuit(1)
-        q0 = circuit.qubits[0]
-        H(q0)  # Prepare superposition
+        with circuit:
+            H(0)  # Prepare superposition
 
         simulator = JaxSimulator()
         expval = simulator.expectation(circuit, "Z")
@@ -136,8 +136,8 @@ class TestSimulatorMethods:
     def test_state_vector(self):
         """Test state vector retrieval with full pipeline."""
         circuit = QuantumCircuit(1)
-        q0 = circuit.qubits[0]
-        X(q0)  # Prepare |1⟩ state
+        with circuit:
+            X(0)  # Prepare |1⟩ state
 
         simulator = JaxSimulator()
         state = simulator.statevector(circuit)
@@ -148,8 +148,8 @@ class TestSimulatorMethods:
     def test_calc_probs(self):
         """Test probability calculation with full pipeline."""
         circuit = QuantumCircuit(1)
-        q0 = circuit.qubits[0]
-        H(q0)  # Prepare superposition
+        with circuit:
+            H(0)  # Prepare superposition
 
         simulator = JaxSimulator()
         probs = simulator.probabilities(circuit)
@@ -164,10 +164,10 @@ class TestOptimizationDisabledEnabled:
     def test_optimization_disabled(self):
         """Test integration with optimization disabled."""
         circuit = QuantumCircuit(2)
-        q0, q1 = circuit.qubits
-        X(q0)
-        X(q0)  # X*X = I, should not be optimized away
-        H(q1)
+        with circuit:
+            X(0)
+            X(0)  # X*X = I, should not be optimized away
+            H(1)
 
         simulator = JaxSimulator(optimize_circuit=False)
         state = simulator.statevector(circuit)
@@ -180,10 +180,10 @@ class TestOptimizationDisabledEnabled:
     def test_optimization_enabled(self):
         """Test integration with optimization enabled."""
         circuit = QuantumCircuit(2)
-        q0, q1 = circuit.qubits
-        X(q0)
-        X(q0)  # X*X = I, should be optimized away
-        H(q1)
+        with circuit:
+            X(0)
+            X(0)  # X*X = I, should be optimized away
+            H(1)
 
         simulator = JaxSimulator(optimize_circuit=True)
         state = simulator.statevector(circuit)
@@ -203,15 +203,14 @@ class TestErrorHandling:
         circuit = QuantumCircuit(1)
 
         with pytest.raises(IndexError, match="list index out of range"):
-            circuit.qubits[1]
+            circuit.operators[1]
 
     def test_invalid_gate_parameters(self):
         """Test error handling for invalid gate parameters."""
         circuit = QuantumCircuit(2)
-        q0, _ = circuit.qubits
-
-        with pytest.raises(ValueError, match="Control and target must differ."):
-            CX(q0, q0)
+        with circuit:
+            with pytest.raises(ValueError, match="Control and target must differ."):
+                CX(0, 0)
 
     def test_invalid_mlir(self):
         """Test error handling for invalid MLIR."""
@@ -227,13 +226,13 @@ class TestPerformance:
     def test_large_circuit_performance(self):
         """Test performance with larger circuits."""
         circuit = QuantumCircuit(4)
-
-        # Add many gates
-        for i in range(10):
-            q0 = circuit.qubits[i % 4]
-            q1 = circuit.qubits[(i + 1) % 4]
-            H(q0)
-            CX(q0, q1)
+        with circuit:
+            # Add many gates
+            for i in range(10):
+                q0 = i % 4
+                q1 = (i + 1) % 4
+                H(q0)
+                CX(q0, q1)
 
         simulator = JaxSimulator()
 
@@ -248,15 +247,16 @@ class TestPerformance:
     def test_multiple_parameters_performance(self):
         """Test performance with multiple parameters."""
         circuit = QuantumCircuit(2)
-        q0, q1 = circuit.qubits
 
         # Add multiple parameters
         p0, p1, p2, p3, p4 = [Parameter(0.1 * i, name=f"theta{i}") for i in range(5)]
-        RX(p0)(q0)
-        RY(p1)(q1)
-        RZ(p2)(q0)
-        RX(p3)(q1)
-        RY(p4)(q0)
+
+        with circuit:
+            RX(p0)(0)
+            RY(p1)(1)
+            RZ(p2)(0)
+            RX(p3)(1)
+            RY(p4)(0)
 
         simulator = JaxSimulator()
 

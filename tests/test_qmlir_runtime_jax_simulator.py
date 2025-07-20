@@ -33,9 +33,9 @@ class TestJaxSimulator:
         """Test sampling from Bell state circuit."""
         simulator = JaxSimulator()
         circuit = QuantumCircuit(2)
-        q0, q1 = circuit.qubits
-        H(q0)
-        CX(q0, q1)  # Create Bell state |Φ+⟩
+        with circuit:
+            H(0)
+            CX(0, 1)  # Create Bell state |Φ+⟩
         samples = simulator.measure(circuit, 100)
         assert isinstance(samples, dict)
         assert sum(samples.values()) >= 95  # Allow for some rounding
@@ -57,8 +57,8 @@ class TestJaxSimulator:
         """Test expectation value calculation for X gate."""
         simulator = JaxSimulator()
         circuit = QuantumCircuit(1)
-        q0 = circuit.qubits[0]
-        X(q0)
+        with circuit:
+            X(0)
         expval = simulator.expectation(circuit, "Z")
         # X|0⟩ = |1⟩, so ⟨Z⟩ = -1
         assert jnp.allclose(expval, -1.0)
@@ -67,8 +67,8 @@ class TestJaxSimulator:
         """Test expectation value calculation for H gate."""
         simulator = JaxSimulator()
         circuit = QuantumCircuit(1)
-        q0 = circuit.qubits[0]
-        H(q0)
+        with circuit:
+            H(0)
         expval = simulator.expectation(circuit, "Z")
         # H|0⟩ = (|0⟩ + |1⟩)/√2, so ⟨Z⟩ = 0
         assert jnp.allclose(expval, 0.0, atol=1e-6)
@@ -86,8 +86,8 @@ class TestJaxSimulator:
         """Test state vector retrieval for X gate."""
         simulator = JaxSimulator()
         circuit = QuantumCircuit(1)
-        q0 = circuit.qubits[0]
-        X(q0)
+        with circuit:
+            X(0)
         state = simulator.statevector(circuit)
         assert len(state) == 2
         # X|0⟩ = |1⟩
@@ -97,9 +97,9 @@ class TestJaxSimulator:
         """Test state vector retrieval for Bell state."""
         simulator = JaxSimulator()
         circuit = QuantumCircuit(2)
-        q0, q1 = circuit.qubits
-        H(q0)
-        CX(q0, q1)
+        with circuit:
+            H(0)
+            CX(0, 1)
         state = simulator.statevector(circuit)
         assert len(state) == 4
         # Bell state: (|00⟩ + |11⟩)/√2
@@ -119,7 +119,8 @@ class TestJaxSimulator:
         """Test probability calculation for H gate."""
         simulator = JaxSimulator()
         circuit = QuantumCircuit(1)
-        H(circuit.qubits[0])
+        with circuit:
+            H(0)
         probs = simulator.probabilities(circuit)
         assert len(probs) == 2
         # H|0⟩ gives equal probabilities
@@ -129,9 +130,9 @@ class TestJaxSimulator:
         """Test probability calculation for Bell state."""
         simulator = JaxSimulator()
         circuit = QuantumCircuit(2)
-        q0, q1 = circuit.qubits
-        H(q0)
-        CX(q0, q1)
+        with circuit:
+            H(0)
+            CX(0, 1)
         probs = simulator.probabilities(circuit)
         assert len(probs) == 4
         # Bell state probabilities: [0.5, 0.0, 0.0, 0.5]
@@ -147,7 +148,8 @@ class TestJaxSimulatorWithParameters:
         simulator = JaxSimulator()
         circuit = QuantumCircuit(1)
         param = Parameter(0.5, name="theta")
-        RX(param)(circuit.qubits[0])
+        with circuit:
+            RX(param)(0)
 
         # Test state vector
         state = simulator.statevector(circuit)
@@ -166,7 +168,8 @@ class TestJaxSimulatorWithParameters:
         simulator = JaxSimulator()
         circuit = QuantumCircuit(1)
         param = Parameter(0.5, name="theta")
-        RY(param)(circuit.qubits[0])
+        with circuit:
+            RY(param)(0)
 
         # Test state vector
         state = simulator.statevector(circuit)
@@ -180,7 +183,8 @@ class TestJaxSimulatorWithParameters:
         simulator = JaxSimulator()
         circuit = QuantumCircuit(1)
         param = Parameter(0.5, name="theta")
-        RZ(param)(circuit.qubits[0])
+        with circuit:
+            RZ(param)(0)
 
         # Test state vector
         state = simulator.statevector(circuit)
@@ -197,10 +201,10 @@ class TestJaxSimulatorOptimization:
         """Test simulation with optimization disabled."""
         simulator = JaxSimulator(optimize_circuit=False)
         circuit = QuantumCircuit(2)
-        q0, q1 = circuit.qubits
-        X(q0)
-        X(q0)
-        H(q1)
+        with circuit:
+            X(0)
+            X(0)
+            H(1)
 
         # With optimization disabled, should still work
         state = simulator.statevector(circuit)
@@ -215,10 +219,10 @@ class TestJaxSimulatorOptimization:
         """Test simulation with optimization enabled."""
         simulator = JaxSimulator(optimize_circuit=True)
         circuit = QuantumCircuit(2)
-        q0, q1 = circuit.qubits
-        X(q0)
-        X(q0)
-        H(q1)
+        with circuit:
+            X(0)
+            X(0)  # X*X = I, should be optimized away
+            H(1)
 
         # With optimization enabled, should work and potentially optimize
         state = simulator.statevector(circuit)
@@ -238,12 +242,12 @@ class TestJaxSimulatorEdgeCases:
         """Test simulation of larger circuit."""
         simulator = JaxSimulator()
         circuit = QuantumCircuit(3)
-        q0, q1, q2 = circuit.qubits
-        H(q0)
-        CX(q0, q1)
-        H(q2)
-        CX(q1, q2)
-        X(q0)
+        with circuit:
+            H(0)
+            CX(0, 1)
+            H(2)
+            CX(1, 2)
+            X(0)
 
         # Should handle larger circuits
         state = simulator.statevector(circuit)
@@ -259,9 +263,9 @@ class TestJaxSimulatorEdgeCases:
         circuit = QuantumCircuit(2)
         param1 = Parameter(0.5, name="theta1")
         param2 = Parameter(0.3, name="theta2")
-        q0, q1 = circuit.qubits
-        RX(param1)(q0)
-        RY(param2)(q1)
+        with circuit:
+            RX(param1)(0)
+            RY(param2)(1)
 
         # Should handle multiple parameters
         state = simulator.statevector(circuit)
