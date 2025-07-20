@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Union
 from .parameter import Parameter
 
 
@@ -35,9 +35,92 @@ class Operator:
         self.self_inverse = self_inverse
 
     def __repr__(self):
-        qstr = ", ".join(f"q{q}" for q in self.qubits)
+        qstr = ", ".join(f"{q}" for q in self.qubits)
         pstr = f"({', '.join(map(str, self.parameters))})" if self.parameters else ""
         return f"{self.name}{pstr}|{qstr}⟩"
+
+    def __add__(self, other: Union["Operator", "OperatorComposition", "ObservableExpression"]):
+        return ObservableExpression([(1.0, self)]) + other
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        return self + (-1.0 * other)
+
+    def __rsub__(self, other):
+        return other + (-1.0 * self)
+
+    def __matmul__(self, other: "Operator") -> "OperatorComposition":
+        return OperatorComposition([self, other])
+
+    def __rmul__(self, scalar: float) -> "ObservableExpression":
+        return ObservableExpression([(scalar, self)])
+
+
+# --------------------------------------------------------------------------------
+# Composite Operator for Observables
+# --------------------------------------------------------------------------------
+
+
+class OperatorComposition:
+    def __init__(self, terms):
+        self.terms = terms
+
+    def __repr__(self):
+        return " @ ".join(map(str, self.terms))
+
+    def __add__(self, other):
+        return ObservableExpression([(1.0, self)]) + other
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        return self + (-1.0 * other)
+
+    def __rsub__(self, other):
+        return (-1.0 * self) + other
+
+    def __matmul__(self, other):
+        return OperatorComposition(self.terms + [other])
+
+    def __rmul__(self, scalar):
+        return ObservableExpression([(scalar, self)])
+
+
+class ObservableExpression:
+    def __init__(self, terms):
+        self.terms = terms  # List of (coefficient, Operator or OperatorComposition)
+
+    def __repr__(self):
+        return " + ".join(f"{coeff}*({term})" for coeff, term in self.terms)
+
+    def __add__(self, other):
+        if isinstance(other, ObservableExpression):
+            return ObservableExpression(self.terms + other.terms)
+        elif isinstance(other, (Operator, OperatorComposition)):
+            return ObservableExpression(self.terms + [(1.0, other)])
+        else:
+            raise TypeError(f"Cannot add {other} to {self}")
+
+    def __radd__(self, other):
+        return self.__add__(other)
+
+    def __sub__(self, other):
+        if isinstance(other, ObservableExpression):
+            negated = [(-c, t) for c, t in other.terms]
+            return ObservableExpression(self.terms + negated)
+        elif isinstance(other, (Operator, OperatorComposition)):
+            return ObservableExpression(self.terms + [(-1.0, other)])
+        else:
+            raise TypeError(f"Cannot subtract {other} from {self}")
+
+    def __rsub__(self, other):
+        return (-1.0 * self) + other
+
+    def __rmul__(self, scalar):
+        return ObservableExpression([(scalar * coeff, term) for coeff, term in self.terms])
 
 
 # --------------------------------------------------------------------------------
