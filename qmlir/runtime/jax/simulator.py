@@ -9,8 +9,10 @@ import jax.numpy as jnp
 from collections import Counter
 from typing import Dict
 from ...circuit import QuantumCircuit
+from ...operator import Observable, validate_observable, Z
 from ...mlir import circuit_to_mlir, apply_passes
 from .engine import simulate_from_mlir
+from .observable import evaluate_observable
 
 
 class JaxSimulator:
@@ -29,31 +31,20 @@ class JaxSimulator:
         # Sample bitstrings based on probabilities
         samples = jax.random.choice(subkey, num_states, shape=(shots,), p=probs)
         num_qubits = circuit.num_qubits
-        bitstrings = [_format_bitstring(i, num_qubits, circuit.little_endian) for i in samples]
+        bitstrings = [format(i, f"0{num_qubits}b") for i in samples]
         return dict(Counter(bitstrings))
 
-    def expectation(self, circuit: QuantumCircuit, observable: str) -> float:
+    def expectation(self, circuit: QuantumCircuit, observable: Observable) -> float:
         """Calculate expectation value of an observable."""
-        # For now, implement basic Pauli observables
         state_vector = self.statevector(circuit)
-
-        if observable == "Z":
-            # Single qubit Z expectation
-            return float(
-                jnp.real(jnp.conj(state_vector[0]) * state_vector[0] - jnp.conj(state_vector[1]) * state_vector[1])
-            )
-        elif observable == "ZZ":
-            # Two qubit ZZ expectation
-            return float(
-                jnp.real(
-                    jnp.conj(state_vector[0]) * state_vector[0]
-                    + jnp.conj(state_vector[1]) * state_vector[1]
-                    - jnp.conj(state_vector[2]) * state_vector[2]
-                    - jnp.conj(state_vector[3]) * state_vector[3]
-                )
-            )
+        num_qubits = circuit.num_qubits
+        if observable is None:
+            qubits = list(range(num_qubits))
+            observable = Z(*qubits)
         else:
-            raise ValueError(f"Observable {observable} not yet implemented")
+            validate_observable(observable)
+        little_endian = circuit.little_endian
+        return float(jnp.real(evaluate_observable(state_vector, num_qubits, observable, little_endian)))
 
     def statevector(self, circuit: QuantumCircuit) -> jnp.ndarray:
         """Get the final state vector of the circuit."""
@@ -66,19 +57,7 @@ class JaxSimulator:
         return results["probabilities"]
 
     def _simulate_circuit(self, circuit: QuantumCircuit) -> Dict:
-        """Internal method to simulate a circuit and return results.
-
-        This method handles the complete pipeline:
-        1. Transpile circuit to MLIR
-        2. Optimize if requested
-        3. Simulate with JAX runtime
-
-        Args:
-            circuit: The quantum circuit to simulate
-
-        Returns:
-            Dictionary with simulation results
-        """
+        """Internal method to simulate a circuit and return results."""
         # Step 1: Transpile circuit to MLIR
         mlir_code = circuit_to_mlir(circuit)
 
@@ -97,12 +76,4 @@ class JaxSimulator:
                     param_ids_seen.add(param.id)
 
         # Step 4: Simulate with JAX runtime
-        results = simulate_from_mlir(mlir_code, circuit.num_qubits, param_values, circuit.little_endian)
-
-        return results
-
-
-def _format_bitstring(i: int, num_qubits: int, little_endian: bool) -> str:
-    bitstr = format(i, f"0{num_qubits}b")  # MSB-left (little endian)
-    # If big-endian: reverse to get q0 at left
-    return bitstr[::-1] if little_endian else bitstr
+        return simulate_from_mlir(mlir_code, circuit.num_qubits, param_values, circuit.little_endian)

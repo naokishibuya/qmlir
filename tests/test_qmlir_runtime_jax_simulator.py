@@ -2,7 +2,7 @@
 
 import numpy as np
 import jax.numpy as jnp
-from qmlir.operator import CX, H, RX, RY, RZ, X
+from qmlir.operator import CX, H, RX, RY, RZ, X, Z
 from qmlir.runtime.jax.simulator import JaxSimulator
 from qmlir.circuit import QuantumCircuit
 from qmlir.parameter import Parameter
@@ -82,7 +82,7 @@ class TestJaxSimulator:
         """Test expectation value calculation for empty circuit."""
         simulator = JaxSimulator()
         circuit = QuantumCircuit(1)
-        expval = simulator.expectation(circuit, "Z")
+        expval = simulator.expectation(circuit, Z(0))
         assert isinstance(expval, float)
         # Empty circuit should give expectation value of 1 for Z operator
         assert jnp.allclose(expval, 1.0)
@@ -93,7 +93,7 @@ class TestJaxSimulator:
         circuit = QuantumCircuit(1)
         with circuit:
             X(0)
-        expval = simulator.expectation(circuit, "Z")
+        expval = simulator.expectation(circuit, Z(0))
         # X|0⟩ = |1⟩, so ⟨Z⟩ = -1
         assert jnp.allclose(expval, -1.0)
 
@@ -103,7 +103,7 @@ class TestJaxSimulator:
         circuit = QuantumCircuit(1)
         with circuit:
             H(0)
-        expval = simulator.expectation(circuit, "Z")
+        expval = simulator.expectation(circuit, Z(0))
         # H|0⟩ = (|0⟩ + |1⟩)/√2, so ⟨Z⟩ = 0
         assert jnp.allclose(expval, 0.0, atol=1e-6)
 

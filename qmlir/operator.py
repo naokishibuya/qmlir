@@ -65,6 +65,10 @@ class Operator:
 
 class OperatorComposition:
     def __init__(self, terms):
+        qubit_indices = [q for op in terms for q in getattr(op, "qubits", [])]
+        if len(set(qubit_indices)) != len(qubit_indices):
+            raise ValueError(f"Tensor product with duplicate qubit indices is invalid: {qubit_indices}")
+
         self.terms = terms
 
     def __repr__(self):
@@ -121,6 +125,29 @@ class ObservableExpression:
 
     def __rmul__(self, scalar):
         return ObservableExpression([(scalar * coeff, term) for coeff, term in self.terms])
+
+
+# --------------------------------------------------------------------------------
+# Define the Observable type for type hinting
+# --------------------------------------------------------------------------------
+
+Observable = Union[Operator, OperatorComposition, ObservableExpression]
+
+
+def validate_observable(obs: Observable):
+    if isinstance(obs, Operator):
+        if obs.name not in ("X", "Y", "Z", "I"):
+            raise TypeError(f"Unsupported observable: {obs.name}")
+    elif isinstance(obs, OperatorComposition):
+        for op in obs.terms:
+            validate_observable(op)
+    elif isinstance(obs, ObservableExpression):
+        for term, coeff in obs.terms:
+            # Recursively validate the observable terms and coefficients
+            validate_observable(term)
+            validate_observable(coeff)
+    elif not isinstance(obs, (int, float, complex)):
+        raise TypeError(f"Invalid observable type: {type(obs)}")
 
 
 # --------------------------------------------------------------------------------

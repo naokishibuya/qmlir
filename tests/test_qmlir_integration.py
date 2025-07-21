@@ -4,7 +4,7 @@ import pytest
 import numpy as np
 import jax.numpy as jnp
 from qmlir import QuantumCircuit, Parameter, JaxSimulator
-from qmlir.operator import X, H, CX, CZ, RX, RY, RZ
+from qmlir.operator import X, Z, H, CX, CZ, RX, RY, RZ
 from qmlir.mlir import circuit_to_mlir, apply_passes
 
 
@@ -129,7 +129,7 @@ class TestSimulatorMethods:
             H(0)  # Prepare superposition
 
         simulator = JaxSimulator()
-        expval = simulator.expectation(circuit, "Z")
+        expval = simulator.expectation(circuit, Z(0))
 
         # H|0⟩ = (|0⟩ + |1⟩)/√2, so ⟨Z⟩ = 0
         assert jnp.allclose(expval, 0.0, atol=1e-6)
