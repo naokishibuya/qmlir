@@ -85,6 +85,7 @@ class JaxSimulator:
         # Step 2: Apply optimization passes if requested
         if self.optimize_circuit:
             mlir_code = apply_passes(mlir_code)
+        circuit.compiled_mlir = mlir_code.strip()  # Store compiled MLIR in circuit for reference
 
         # Step 3: Collect parameter values from circuit
         param_values = []

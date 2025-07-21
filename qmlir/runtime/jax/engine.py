@@ -140,9 +140,7 @@ def simulate_from_mlir(
 
     # Encode operations for JAX simulation
     encoded_ops = encode_operations(operations)
-    print()
-    print("Operations:", operations)
-    print("Encoded ops:", encoded_ops)
+
     # Simulate circuit
     final_state = simulate_circuit(encoded_ops, num_qubits, None)
 
