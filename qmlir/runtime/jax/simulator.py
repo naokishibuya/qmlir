@@ -14,9 +14,10 @@ from .engine import simulate_from_mlir
 
 
 class JaxSimulator:
-    def __init__(self, optimize_circuit: bool = True, seed: int = 0):
+    def __init__(self, optimize_circuit: bool = True, seed: int = 0, big_endian: bool = True):
         self.optimize_circuit = optimize_circuit
         self.rng_key = jax.random.PRNGKey(seed)  # Random key for reproducibility
+        self.big_endian = big_endian
 
     def measure(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
         """Sample measurements from the circuit by running it multiple times."""
@@ -96,6 +97,6 @@ class JaxSimulator:
                     param_ids_seen.add(param.id)
 
         # Step 4: Simulate with JAX runtime
-        results = simulate_from_mlir(mlir_code, num_qubits=circuit.num_qubits, param_values=param_values)
+        results = simulate_from_mlir(mlir_code, circuit.num_qubits, param_values, self.big_endian)
 
         return results

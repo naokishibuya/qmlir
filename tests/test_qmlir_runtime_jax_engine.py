@@ -125,7 +125,7 @@ class TestSimulation:
           }
         }
         """
-        result = simulate_from_mlir(mlir, num_qubits=1)
+        result = simulate_from_mlir(mlir, num_qubits=1, param_values=None, big_endian=True)
         assert result["num_qubits"] == 1
         assert result["num_operations"] == 1  # just alloc
         assert len(result["final_state"]) == 2
@@ -142,7 +142,7 @@ class TestSimulation:
           }
         }
         """
-        result = simulate_from_mlir(mlir, num_qubits=1)
+        result = simulate_from_mlir(mlir, num_qubits=1, param_values=None, big_endian=True)
         assert result["num_operations"] == 2  # alloc + x
         # X|0⟩ = |1⟩, so probability of |1⟩ should be 1
         assert jnp.allclose(result["probabilities"], jnp.array([0.0, 1.0]))
@@ -158,7 +158,7 @@ class TestSimulation:
           }
         }
         """
-        result = simulate_from_mlir(mlir, num_qubits=1)
+        result = simulate_from_mlir(mlir, num_qubits=1, param_values=None, big_endian=True)
         assert result["num_operations"] == 2  # alloc + h
         # H|0⟩ = (|0⟩ + |1⟩)/√2, so equal probabilities
         expected_probs = jnp.array([0.5, 0.5])
@@ -177,7 +177,7 @@ class TestSimulation:
           }
         }
         """
-        result = simulate_from_mlir(mlir, num_qubits=2)
+        result = simulate_from_mlir(mlir, num_qubits=2, param_values=None, big_endian=True)
         assert result["num_operations"] == 4  # 2 allocs + h + cx
         assert len(result["final_state"]) == 4
         assert len(result["probabilities"]) == 4
@@ -196,7 +196,7 @@ class TestSimulation:
           }
         }
         """
-        result = simulate_from_mlir(mlir, num_qubits=1, param_values=[0.5])
+        result = simulate_from_mlir(mlir, num_qubits=1, param_values=[0.5], big_endian=True)
         assert result["num_operations"] == 2  # alloc + rx
         assert len(result["probabilities"]) == 2
         # RX(0.5)|0⟩ should give specific probabilities
@@ -220,7 +220,7 @@ class TestSimulationEdgeCases:
           }
         }
         """
-        result = simulate_from_mlir(mlir, num_qubits=2)
+        result = simulate_from_mlir(mlir, num_qubits=2, param_values=None, big_endian=True)
         assert result["num_operations"] == 5  # 2 allocs + x + h + cx
         assert len(result["probabilities"]) == 4
 
@@ -235,7 +235,7 @@ class TestSimulationEdgeCases:
           }
         }
         """
-        result = simulate_from_mlir(mlir, num_qubits=1)  # No param_values
+        result = simulate_from_mlir(mlir, num_qubits=1, param_values=None, big_endian=True)
         assert result["num_operations"] == 2
         # Should use default parameter value (0.0)
         assert jnp.allclose(result["probabilities"], jnp.array([1.0, 0.0]), atol=1e-6)

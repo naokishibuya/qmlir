@@ -118,7 +118,10 @@ GATE_NAME_TO_ID = {
 
 
 def simulate_circuit(
-    operations: jnp.ndarray, num_qubits: int, initial_state: Optional[jnp.ndarray] = None
+    operations: jnp.ndarray,
+    num_qubits: int,
+    initial_state: Optional[jnp.ndarray],
+    big_endian: bool,
 ) -> jnp.ndarray:
     """
     Simulate quantum circuit using JAX (non-JIT version for dynamic shapes).
@@ -127,6 +130,7 @@ def simulate_circuit(
         operations: Array of [gate_id, qubit_indices, parameters] for each operation
         num_qubits: Number of qubits in the circuit
         initial_state: Optional initial quantum state vector
+        big_endian: Whether to use big-endian bit order (default True)
 
     Returns:
         Final quantum state vector
@@ -144,13 +148,18 @@ def simulate_circuit(
         params = operation[2:]  # Parameters start from index 2 (after qubits)
 
         # Apply gate using vectorized operations
-        state = apply_gate_vectorized(state, gate_id, qubits, params, num_qubits)
+        state = apply_gate_vectorized(state, gate_id, qubits, params, num_qubits, big_endian)
 
     return state
 
 
 def apply_gate_vectorized(
-    state: jnp.ndarray, gate_id: int, qubits: jnp.ndarray, params: jnp.ndarray, num_qubits: int
+    state: jnp.ndarray,
+    gate_id: int,
+    qubits: jnp.ndarray,
+    params: jnp.ndarray,
+    num_qubits: int,
+    big_endian: bool,
 ) -> jnp.ndarray:
     """
     Apply quantum gate using JAX vectorized operations.
@@ -161,6 +170,7 @@ def apply_gate_vectorized(
         qubits: Qubit indices [qubit0, qubit1] (padded with -1 for single-qubit gates)
         params: Gate parameters for rotation gates
         num_qubits: Total number of qubits
+        big_endian: Whether to use big-endian bit order (default True)
 
     Returns:
         Updated quantum state vector
@@ -168,118 +178,172 @@ def apply_gate_vectorized(
     # Simple implementation for basic gates
     if gate_id <= GateID.T_DAGGER:  # Single-qubit gates
         gate_matrix = GATE_MATRICES.get(gate_id, GATE_MATRICES[GateID.IDENTITY])
-        return _apply_single_gate(state, qubits, params, num_qubits, gate_matrix)
+        return _apply_single_gate(state, qubits, params, num_qubits, gate_matrix, big_endian)
     elif gate_id == GateID.CNOT:
-        return _apply_cnot(state, qubits, params, num_qubits)
+        return _apply_cx(state, qubits, params, num_qubits, big_endian)
     elif gate_id == GateID.CONTROLLED_Y:
-        return _apply_cy(state, qubits, params, num_qubits)
+        return _apply_cy(state, qubits, params, num_qubits, big_endian)
     elif gate_id == GateID.CONTROLLED_Z:
-        return _apply_cz(state, qubits, params, num_qubits)
+        return _apply_cz(state, qubits, params, num_qubits, big_endian)
     elif gate_id == GateID.ROTATION_X:
-        return _apply_rx(state, qubits, params, num_qubits)
+        return _apply_rx(state, qubits, params, num_qubits, big_endian)
     elif gate_id == GateID.ROTATION_Y:
-        return _apply_ry(state, qubits, params, num_qubits)
+        return _apply_ry(state, qubits, params, num_qubits, big_endian)
     elif gate_id == GateID.ROTATION_Z:
-        return _apply_rz(state, qubits, params, num_qubits)
+        return _apply_rz(state, qubits, params, num_qubits, big_endian)
     else:
         # For other gates, return state unchanged for now
         return state
 
 
 def _apply_single_gate(
-    state: jnp.ndarray, qubits: jnp.ndarray, params: jnp.ndarray, num_qubits: int, gate_matrix: jnp.ndarray
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    params: jnp.ndarray,
+    num_qubits: int,
+    gate_matrix: jnp.ndarray,
+    big_endian: bool,
 ) -> jnp.ndarray:
-    """Apply single-qubit gate using tensor product operations."""
-    qubit = qubits[0]
+    """Apply single-qubit gate using tensor product operations (big-endian)."""
+    qubit = int(qubits[0])  # logical qubit index (q=0 = MSB)
 
-    # For single-qubit systems, apply gate directly
-    if num_qubits == 1:
-        return gate_matrix @ state
+    target_tensor_index = num_qubits - 1 - qubit  # map logical qubit to tensor product position
 
-    # For 2-qubit systems, use direct matrix construction for correctness
-    if num_qubits == 2:
-        if qubit == 0:
-            # Apply gate to qubit 0 (MSB): X ⊗ I
-            # State ordering: |00⟩, |01│, |10│, |11│ (big-endian: qubit 0 ⊗ qubit 1)
-            full_gate = jnp.kron(gate_matrix, jnp.eye(2, dtype=jnp.complex64))
-        else:  # qubit == 1
-            # Apply gate to qubit 1 (LSB): I ⊗ X
-            # State ordering: |00│, |01│, |10│, |11│ (big-endian: qubit 0 ⊗ qubit 1)
-            full_gate = jnp.kron(jnp.eye(2, dtype=jnp.complex64), gate_matrix)
+    full_op = None
 
-        return full_gate @ state
+    for i in range(num_qubits) if big_endian else reversed(range(num_qubits)):
+        if i == target_tensor_index:
+            op = gate_matrix
+        else:
+            op = jnp.eye(2, dtype=jnp.complex64)  # Identity for other qubits
+        if full_op is None:
+            full_op = op
+        else:
+            # Tensor product with previous operations
+            full_op = jnp.kron(op, full_op)
 
-    # For larger systems, use tensor product approach
-    # This is a simplified version - would need more sophisticated implementation
-    # for arbitrary qubit counts
-    return state
+    return full_op @ state
 
 
 def _apply_controlled_gate(
-    state: jnp.ndarray, control: int, target: int, gate_matrix: jnp.ndarray, num_qubits: int
+    state: jnp.ndarray,
+    control: int,
+    target: int,
+    gate_matrix: jnp.ndarray,
+    num_qubits: int,
+    big_endian: bool,
 ) -> jnp.ndarray:
-    """Apply controlled gate using tensor product operations."""
-    if num_qubits == 2:
-        # For 2-qubit systems, construct controlled gate matrix directly
-        # Controlled-X: |00⟩→|00⟩, |01⟩→|01│, |10⟩→|11│, |11⟩→|10│
-        if control == 0 and target == 1:
-            # CNOT with control on qubit 0, target on qubit 1
-            controlled_gate = jnp.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0]], dtype=jnp.complex64)
-        elif control == 1 and target == 0:
-            # CNOT with control on qubit 1, target on qubit 0
-            controlled_gate = jnp.array([[1, 0, 0, 0], [0, 0, 0, 1], [0, 0, 1, 0], [0, 1, 0, 0]], dtype=jnp.complex64)
-        else:
-            # Identity for same qubit
-            controlled_gate = jnp.eye(4, dtype=jnp.complex64)
+    """Apply a controlled single-qubit gate to `state` under big-endian or little-endian convention."""
+    if control == target:
+        raise ValueError("Control and target qubits must be different.")
 
-        return controlled_gate @ state
+    dim = 2**num_qubits
+    result = state.copy()
 
-    # For larger systems, would need more sophisticated implementation
-    return state
+    for i in range(dim):
+        bin_str = format(i, f"0{num_qubits}b")  # MSB at index 0
+        if not big_endian:
+            bin_str = bin_str[::-1]
+
+        ctrl_val = int(bin_str[control])
+        tgt_val = int(bin_str[target])
+
+        if ctrl_val == 1:
+            # Flip the target bit to create the other basis index
+            flipped = list(bin_str)
+            flipped[target] = "0" if tgt_val == 1 else "1"
+            j = int("".join(flipped if big_endian else flipped[::-1]), 2)
+
+            amp0 = state[j] if tgt_val == 1 else state[i]
+            amp1 = state[i] if tgt_val == 1 else state[j]
+
+            new_amp0 = gate_matrix[0, 0] * amp0 + gate_matrix[0, 1] * amp1
+            new_amp1 = gate_matrix[1, 0] * amp0 + gate_matrix[1, 1] * amp1
+
+            result = result.at[i].set(new_amp1 if tgt_val == 1 else new_amp0)
+            result = result.at[j].set(new_amp0 if tgt_val == 1 else new_amp1)
+
+    return result
 
 
-def _apply_cnot(state: jnp.ndarray, qubits: jnp.ndarray, params: jnp.ndarray, num_qubits: int) -> jnp.ndarray:
+def _apply_cx(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    params: jnp.ndarray,
+    num_qubits: int,
+    big_endian: bool,
+) -> jnp.ndarray:
     """Apply CNOT gate."""
     control, target = qubits[0], qubits[1]
-    return _apply_controlled_gate(state, control, target, GATE_MATRICES[GateID.PAULI_X], num_qubits)
+    return _apply_controlled_gate(state, control, target, GATE_MATRICES[GateID.PAULI_X], num_qubits, big_endian)
 
 
-def _apply_cy(state: jnp.ndarray, qubits: jnp.ndarray, params: jnp.ndarray, num_qubits: int) -> jnp.ndarray:
+def _apply_cy(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    params: jnp.ndarray,
+    num_qubits: int,
+    big_endian: bool,
+) -> jnp.ndarray:
     """Apply controlled-Y gate."""
     control, target = qubits[0], qubits[1]
-    return _apply_controlled_gate(state, control, target, GATE_MATRICES[GateID.PAULI_Y], num_qubits)
+    return _apply_controlled_gate(state, control, target, GATE_MATRICES[GateID.PAULI_Y], num_qubits, big_endian)
 
 
-def _apply_cz(state: jnp.ndarray, qubits: jnp.ndarray, params: jnp.ndarray, num_qubits: int) -> jnp.ndarray:
+def _apply_cz(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    params: jnp.ndarray,
+    num_qubits: int,
+    big_endian: bool,
+) -> jnp.ndarray:
     """Apply controlled-Z gate."""
     control, target = qubits[0], qubits[1]
-    return _apply_controlled_gate(state, control, target, GATE_MATRICES[GateID.PAULI_Z], num_qubits)
+    return _apply_controlled_gate(state, control, target, GATE_MATRICES[GateID.PAULI_Z], num_qubits, big_endian)
 
 
-def _apply_rx(state: jnp.ndarray, qubits: jnp.ndarray, params: jnp.ndarray, num_qubits: int) -> jnp.ndarray:
+def _apply_rx(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    params: jnp.ndarray,
+    num_qubits: int,
+    big_endian: bool,
+) -> jnp.ndarray:
     """Apply RX rotation gate."""
     theta = params[0]
     rx_matrix = jnp.array(
         [[jnp.cos(theta / 2), -1j * jnp.sin(theta / 2)], [-1j * jnp.sin(theta / 2), jnp.cos(theta / 2)]],
         dtype=jnp.complex64,
     )
-    return _apply_single_gate(state, qubits, params, num_qubits, rx_matrix)
+    return _apply_single_gate(state, qubits, params, num_qubits, rx_matrix, big_endian)
 
 
-def _apply_ry(state: jnp.ndarray, qubits: jnp.ndarray, params: jnp.ndarray, num_qubits: int) -> jnp.ndarray:
+def _apply_ry(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    params: jnp.ndarray,
+    num_qubits: int,
+    big_endian: bool,
+) -> jnp.ndarray:
     """Apply RY rotation gate."""
     theta = params[0]
     ry_matrix = jnp.array(
         [[jnp.cos(theta / 2), -jnp.sin(theta / 2)], [jnp.sin(theta / 2), jnp.cos(theta / 2)]], dtype=jnp.complex64
     )
-    return _apply_single_gate(state, qubits, params, num_qubits, ry_matrix)
+    return _apply_single_gate(state, qubits, params, num_qubits, ry_matrix, big_endian)
 
 
-def _apply_rz(state: jnp.ndarray, qubits: jnp.ndarray, params: jnp.ndarray, num_qubits: int) -> jnp.ndarray:
+def _apply_rz(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    params: jnp.ndarray,
+    num_qubits: int,
+    big_endian: bool,
+) -> jnp.ndarray:
     """Apply RZ rotation gate."""
     theta = params[0]
     rz_matrix = jnp.array([[jnp.exp(-1j * theta / 2), 0], [0, jnp.exp(1j * theta / 2)]], dtype=jnp.complex64)
-    return _apply_single_gate(state, qubits, params, num_qubits, rz_matrix)
+    return _apply_single_gate(state, qubits, params, num_qubits, rz_matrix, big_endian)
 
 
 def parse_mlir_operations(mlir_string: str, param_values: List[float] = None) -> List[Dict]:
@@ -416,7 +480,12 @@ def encode_operations(operations: List[Dict]) -> jnp.ndarray:
     return jnp.array(encoded, dtype=jnp.float64)
 
 
-def simulate_from_mlir(mlir_string: str, num_qubits: int, param_values: List[float] = None) -> Dict:
+def simulate_from_mlir(
+    mlir_string: str,
+    num_qubits: int,
+    param_values: List[float],
+    big_endian: bool,
+) -> Dict:
     """
     Simulate quantum circuit from MLIR string.
 
@@ -424,6 +493,7 @@ def simulate_from_mlir(mlir_string: str, num_qubits: int, param_values: List[flo
         mlir_string: MLIR code as string
         num_qubits: Number of qubits in the circuit
         param_values: List of parameter values for parametric gates
+        big_endian: Whether to use big-endian bit order (default True)
 
     Returns:
         Dictionary with simulation results
@@ -435,7 +505,7 @@ def simulate_from_mlir(mlir_string: str, num_qubits: int, param_values: List[flo
     encoded_ops = encode_operations(operations)
 
     # Simulate circuit
-    final_state = simulate_circuit(encoded_ops, num_qubits)
+    final_state = simulate_circuit(encoded_ops, num_qubits, None, big_endian)
 
     # Calculate probabilities
     probabilities = jnp.abs(final_state) ** 2

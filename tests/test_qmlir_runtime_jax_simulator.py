@@ -1,10 +1,44 @@
 """Tests for qmlir.runtime.jax.simulator module."""
 
+import numpy as np
 import jax.numpy as jnp
 from qmlir.operator import CX, H, RX, RY, RZ, X
 from qmlir.runtime.jax.simulator import JaxSimulator
 from qmlir.circuit import QuantumCircuit
 from qmlir.parameter import Parameter
+
+
+def test_x_gate_on_msb():
+    circuit = QuantumCircuit(3)
+    with circuit:
+        X(0)  # MSB
+    sim = JaxSimulator()
+    probs = sim.probabilities(circuit)
+    expected = [0.0] * 2**3
+    expected[4] = 1.0  # |100⟩ state
+    assert np.allclose(probs, expected, atol=1e-6)
+
+
+def test_cx_self_inverse1():
+    circuit = QuantumCircuit(2)
+    with circuit:
+        H(0)
+        CX(0, 1)
+        CX(0, 1)  # Apply CX twice
+    sim = JaxSimulator()
+    probs = sim.probabilities(circuit)
+    assert np.allclose(probs, [0.5, 0.0, 0.5, 0.0], atol=1e-6)  # Same as just H(1)
+
+
+def test_cx_self_inverse2():
+    circuit = QuantumCircuit(2)
+    with circuit:
+        H(1)
+        CX(0, 1)
+        CX(0, 1)  # Apply CX twice
+    sim = JaxSimulator()
+    probs = sim.probabilities(circuit)
+    assert np.allclose(probs, [0.5, 0.0, 0.5, 0.0], atol=1e-6)  # Same as just H(1)
 
 
 class TestJaxSimulator:
