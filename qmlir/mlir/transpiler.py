@@ -52,7 +52,7 @@ def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str
 
             with ir.InsertionPoint(block):
                 i32 = ir.IntegerType.get_signless(32)
-                ssa_qubits = {
+                ssa_qubits = {  # SSA = Static Single Assignment
                     i: ir.Operation.create("quantum.alloc", results=[i32]).result for i in range(circuit.num_qubits)
                 }
 

@@ -14,10 +14,9 @@ from .engine import simulate_from_mlir
 
 
 class JaxSimulator:
-    def __init__(self, optimize_circuit: bool = True, seed: int = 0, big_endian: bool = True):
+    def __init__(self, optimize_circuit: bool = True, seed: int = 0):
         self.optimize_circuit = optimize_circuit
         self.rng_key = jax.random.PRNGKey(seed)  # Random key for reproducibility
-        self.big_endian = big_endian
 
     def measure(self, circuit: QuantumCircuit, shots: int) -> Dict[str, int]:
         """Sample measurements from the circuit by running it multiple times."""
@@ -29,8 +28,8 @@ class JaxSimulator:
 
         # Sample bitstrings based on probabilities
         samples = jax.random.choice(subkey, num_states, shape=(shots,), p=probs)
-        bitstrings = [format(i, f"0{int(jnp.log2(num_states))}b") for i in samples]
-
+        num_qubits = circuit.num_qubits
+        bitstrings = [_format_bitstring(i, num_qubits, circuit.little_endian) for i in samples]
         return dict(Counter(bitstrings))
 
     def expectation(self, circuit: QuantumCircuit, observable: str) -> float:
@@ -97,6 +96,12 @@ class JaxSimulator:
                     param_ids_seen.add(param.id)
 
         # Step 4: Simulate with JAX runtime
-        results = simulate_from_mlir(mlir_code, circuit.num_qubits, param_values, self.big_endian)
+        results = simulate_from_mlir(mlir_code, circuit.num_qubits, param_values, circuit.little_endian)
 
         return results
+
+
+def _format_bitstring(i: int, num_qubits: int, little_endian: bool) -> str:
+    bitstr = format(i, f"0{num_qubits}b")  # MSB-left (little endian)
+    # If big-endian: reverse to get q0 at left
+    return bitstr[::-1] if little_endian else bitstr

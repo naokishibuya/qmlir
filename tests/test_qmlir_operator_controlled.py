@@ -33,7 +33,7 @@ def test_cz_operator():
         CZ(0, 1)
     simulator = JaxSimulator()
     probs = simulator.probabilities(circuit)
-    expected_probs = [0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0]
+    expected_probs = [0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     assert np.allclose(probs, expected_probs, atol=1e-6), f"Expected {expected_probs}, got {probs}"
 
 

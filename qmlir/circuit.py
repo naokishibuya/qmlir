@@ -11,11 +11,12 @@ from .operator import Operator
 class QuantumCircuit:
     _active_circuit = None
 
-    def __init__(self, num_qubits: int):
+    def __init__(self, num_qubits: int, little_endian: bool = True):
         if num_qubits <= 0:
             raise ValueError("Quantum circuit must have at least one qubit.")
 
         self.num_qubits = num_qubits
+        self.little_endian = little_endian
         self.operators: List[Operator] = []
 
     def __enter__(self):

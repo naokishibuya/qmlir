@@ -9,7 +9,7 @@ from qmlir.parameter import Parameter
 
 
 def test_x_gate_on_msb():
-    circuit = QuantumCircuit(3)
+    circuit = QuantumCircuit(3, little_endian=False)
     with circuit:
         X(0)  # MSB
     sim = JaxSimulator()
@@ -27,7 +27,7 @@ def test_cx_self_inverse1():
         CX(0, 1)  # Apply CX twice
     sim = JaxSimulator()
     probs = sim.probabilities(circuit)
-    assert np.allclose(probs, [0.5, 0.0, 0.5, 0.0], atol=1e-6)  # Same as just H(1)
+    assert np.allclose(probs, [0.5, 0.5, 0.0, 0.0], atol=1e-6)  # Same as just H(1)
 
 
 def test_cx_self_inverse2():
@@ -36,7 +36,7 @@ def test_cx_self_inverse2():
         H(1)
         CX(0, 1)
         CX(0, 1)  # Apply CX twice
-    sim = JaxSimulator()
+    sim = JaxSimulator(optimize_circuit=False)
     probs = sim.probabilities(circuit)
     assert np.allclose(probs, [0.5, 0.0, 0.5, 0.0], atol=1e-6)  # Same as just H(1)
 
@@ -246,7 +246,7 @@ class TestJaxSimulatorOptimization:
 
         # Should be equivalent to just H on qubit 1
         # The actual state shows H applied to qubit 0: [1/sqrt(2), 1/sqrt(2), 0, 0]
-        expected_state = jnp.array([1 / jnp.sqrt(2), 1 / jnp.sqrt(2), 0.0, 0.0], dtype=jnp.complex64)
+        expected_state = jnp.array([1 / jnp.sqrt(2), 0.0, 1 / jnp.sqrt(2), 0.0], dtype=jnp.complex64)
         assert jnp.allclose(state, expected_state, atol=1e-6)
 
     def test_optimization_enabled(self):

@@ -2,7 +2,7 @@ import pytest
 from dataclasses import dataclass
 from qmlir.circuit import QuantumCircuit
 from qmlir.operator import X, RX, H, CX, RZ
-from qmlir.mlir.transpiler import circuit_to_mlir
+from qmlir.mlir.transpiler import apply_passes, circuit_to_mlir
 
 
 def test_basic_operator_transpilation():
@@ -40,6 +40,26 @@ def test_multiple_qubits_allocated():
     assert "quantum.h" in mlir_code
     assert "quantum.x" in mlir_code
     assert "quantum.cx" in mlir_code
+
+
+def test_optimization_passes():
+    circuit = QuantumCircuit(3)
+    with circuit:
+        X(0)
+        X(0)
+        H(1)
+    mlir_code = circuit_to_mlir(circuit)
+    print("=== Original MLIR ===")
+    print(mlir_code)
+
+    optimized_mlir = apply_passes(mlir_code)
+    print("=== Optimized MLIR ===")
+    print(optimized_mlir)
+
+    assert "quantum.x" in mlir_code
+    assert "quantum.h" in mlir_code
+    assert "quantum.x" not in optimized_mlir
+    assert "quantum.h" in optimized_mlir
 
 
 @dataclass(frozen=True)

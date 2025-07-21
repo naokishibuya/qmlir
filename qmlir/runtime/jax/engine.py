@@ -117,242 +117,57 @@ GATE_NAME_TO_ID = {
 }
 
 
-def simulate_circuit(
-    operations: jnp.ndarray,
+def simulate_from_mlir(
+    mlir_string: str,
     num_qubits: int,
-    initial_state: Optional[jnp.ndarray],
-    big_endian: bool,
-) -> jnp.ndarray:
+    param_values: List[float],
+    little_endian: bool = True,
+) -> Dict:
     """
-    Simulate quantum circuit using JAX (non-JIT version for dynamic shapes).
+    Simulate quantum circuit from MLIR string.
 
     Args:
-        operations: Array of [gate_id, qubit_indices, parameters] for each operation
+        mlir_string: MLIR code as string
         num_qubits: Number of qubits in the circuit
-        initial_state: Optional initial quantum state vector
-        big_endian: Whether to use big-endian bit order (default True)
+        param_values: List of parameter values for parametric gates
+        little_endian: Whether to format bitstrings in little-endian order
 
     Returns:
-        Final quantum state vector
+        Dictionary with simulation results
     """
-    # Initialize state vector |00...0⟩
-    if initial_state is None:
-        initial_state = jnp.zeros(2**num_qubits, dtype=jnp.complex64).at[0].set(1.0)
+    # Parse MLIR operations
+    operations = parse_mlir_operations(mlir_string, num_qubits, param_values, little_endian)
 
-    # Apply operations sequentially (no JIT for dynamic shapes)
-    state = initial_state
-    for i in range(operations.shape[0]):
-        operation = operations[i]
-        gate_id = int(operation[0])
-        qubits = operation[1:3].astype(int)  # Max 2 qubits for current gates
-        params = operation[2:]  # Parameters start from index 2 (after qubits)
+    # Encode operations for JAX simulation
+    encoded_ops = encode_operations(operations)
+    print()
+    print("Operations:", operations)
+    print("Encoded ops:", encoded_ops)
+    # Simulate circuit
+    final_state = simulate_circuit(encoded_ops, num_qubits, None)
 
-        # Apply gate using vectorized operations
-        state = apply_gate_vectorized(state, gate_id, qubits, params, num_qubits, big_endian)
+    # Calculate probabilities
+    probabilities = jnp.abs(final_state) ** 2
 
-    return state
-
-
-def apply_gate_vectorized(
-    state: jnp.ndarray,
-    gate_id: int,
-    qubits: jnp.ndarray,
-    params: jnp.ndarray,
-    num_qubits: int,
-    big_endian: bool,
-) -> jnp.ndarray:
-    """
-    Apply quantum gate using JAX vectorized operations.
-
-    Args:
-        state: Current quantum state vector
-        gate_id: Gate identifier (0-14)
-        qubits: Qubit indices [qubit0, qubit1] (padded with -1 for single-qubit gates)
-        params: Gate parameters for rotation gates
-        num_qubits: Total number of qubits
-        big_endian: Whether to use big-endian bit order (default True)
-
-    Returns:
-        Updated quantum state vector
-    """
-    # Simple implementation for basic gates
-    if gate_id <= GateID.T_DAGGER:  # Single-qubit gates
-        gate_matrix = GATE_MATRICES.get(gate_id, GATE_MATRICES[GateID.IDENTITY])
-        return _apply_single_gate(state, qubits, params, num_qubits, gate_matrix, big_endian)
-    elif gate_id == GateID.CNOT:
-        return _apply_cx(state, qubits, params, num_qubits, big_endian)
-    elif gate_id == GateID.CONTROLLED_Y:
-        return _apply_cy(state, qubits, params, num_qubits, big_endian)
-    elif gate_id == GateID.CONTROLLED_Z:
-        return _apply_cz(state, qubits, params, num_qubits, big_endian)
-    elif gate_id == GateID.ROTATION_X:
-        return _apply_rx(state, qubits, params, num_qubits, big_endian)
-    elif gate_id == GateID.ROTATION_Y:
-        return _apply_ry(state, qubits, params, num_qubits, big_endian)
-    elif gate_id == GateID.ROTATION_Z:
-        return _apply_rz(state, qubits, params, num_qubits, big_endian)
-    else:
-        # For other gates, return state unchanged for now
-        return state
+    return {
+        "final_state": final_state,
+        "probabilities": probabilities,
+        "num_qubits": num_qubits,
+        "num_operations": len(operations),
+    }
 
 
-def _apply_single_gate(
-    state: jnp.ndarray,
-    qubits: jnp.ndarray,
-    params: jnp.ndarray,
-    num_qubits: int,
-    gate_matrix: jnp.ndarray,
-    big_endian: bool,
-) -> jnp.ndarray:
-    """Apply single-qubit gate using tensor product operations (big-endian)."""
-    qubit = int(qubits[0])  # logical qubit index (q=0 = MSB)
-
-    target_tensor_index = num_qubits - 1 - qubit  # map logical qubit to tensor product position
-
-    full_op = None
-
-    for i in range(num_qubits) if big_endian else reversed(range(num_qubits)):
-        if i == target_tensor_index:
-            op = gate_matrix
-        else:
-            op = jnp.eye(2, dtype=jnp.complex64)  # Identity for other qubits
-        if full_op is None:
-            full_op = op
-        else:
-            # Tensor product with previous operations
-            full_op = jnp.kron(op, full_op)
-
-    return full_op @ state
-
-
-def _apply_controlled_gate(
-    state: jnp.ndarray,
-    control: int,
-    target: int,
-    gate_matrix: jnp.ndarray,
-    num_qubits: int,
-    big_endian: bool,
-) -> jnp.ndarray:
-    """Apply a controlled single-qubit gate to `state` under big-endian or little-endian convention."""
-    if control == target:
-        raise ValueError("Control and target qubits must be different.")
-
-    dim = 2**num_qubits
-    result = state.copy()
-
-    for i in range(dim):
-        bin_str = format(i, f"0{num_qubits}b")  # MSB at index 0
-        if not big_endian:
-            bin_str = bin_str[::-1]
-
-        ctrl_val = int(bin_str[control])
-        tgt_val = int(bin_str[target])
-
-        if ctrl_val == 1:
-            # Flip the target bit to create the other basis index
-            flipped = list(bin_str)
-            flipped[target] = "0" if tgt_val == 1 else "1"
-            j = int("".join(flipped if big_endian else flipped[::-1]), 2)
-
-            amp0 = state[j] if tgt_val == 1 else state[i]
-            amp1 = state[i] if tgt_val == 1 else state[j]
-
-            new_amp0 = gate_matrix[0, 0] * amp0 + gate_matrix[0, 1] * amp1
-            new_amp1 = gate_matrix[1, 0] * amp0 + gate_matrix[1, 1] * amp1
-
-            result = result.at[i].set(new_amp1 if tgt_val == 1 else new_amp0)
-            result = result.at[j].set(new_amp0 if tgt_val == 1 else new_amp1)
-
-    return result
-
-
-def _apply_cx(
-    state: jnp.ndarray,
-    qubits: jnp.ndarray,
-    params: jnp.ndarray,
-    num_qubits: int,
-    big_endian: bool,
-) -> jnp.ndarray:
-    """Apply CNOT gate."""
-    control, target = qubits[0], qubits[1]
-    return _apply_controlled_gate(state, control, target, GATE_MATRICES[GateID.PAULI_X], num_qubits, big_endian)
-
-
-def _apply_cy(
-    state: jnp.ndarray,
-    qubits: jnp.ndarray,
-    params: jnp.ndarray,
-    num_qubits: int,
-    big_endian: bool,
-) -> jnp.ndarray:
-    """Apply controlled-Y gate."""
-    control, target = qubits[0], qubits[1]
-    return _apply_controlled_gate(state, control, target, GATE_MATRICES[GateID.PAULI_Y], num_qubits, big_endian)
-
-
-def _apply_cz(
-    state: jnp.ndarray,
-    qubits: jnp.ndarray,
-    params: jnp.ndarray,
-    num_qubits: int,
-    big_endian: bool,
-) -> jnp.ndarray:
-    """Apply controlled-Z gate."""
-    control, target = qubits[0], qubits[1]
-    return _apply_controlled_gate(state, control, target, GATE_MATRICES[GateID.PAULI_Z], num_qubits, big_endian)
-
-
-def _apply_rx(
-    state: jnp.ndarray,
-    qubits: jnp.ndarray,
-    params: jnp.ndarray,
-    num_qubits: int,
-    big_endian: bool,
-) -> jnp.ndarray:
-    """Apply RX rotation gate."""
-    theta = params[0]
-    rx_matrix = jnp.array(
-        [[jnp.cos(theta / 2), -1j * jnp.sin(theta / 2)], [-1j * jnp.sin(theta / 2), jnp.cos(theta / 2)]],
-        dtype=jnp.complex64,
-    )
-    return _apply_single_gate(state, qubits, params, num_qubits, rx_matrix, big_endian)
-
-
-def _apply_ry(
-    state: jnp.ndarray,
-    qubits: jnp.ndarray,
-    params: jnp.ndarray,
-    num_qubits: int,
-    big_endian: bool,
-) -> jnp.ndarray:
-    """Apply RY rotation gate."""
-    theta = params[0]
-    ry_matrix = jnp.array(
-        [[jnp.cos(theta / 2), -jnp.sin(theta / 2)], [jnp.sin(theta / 2), jnp.cos(theta / 2)]], dtype=jnp.complex64
-    )
-    return _apply_single_gate(state, qubits, params, num_qubits, ry_matrix, big_endian)
-
-
-def _apply_rz(
-    state: jnp.ndarray,
-    qubits: jnp.ndarray,
-    params: jnp.ndarray,
-    num_qubits: int,
-    big_endian: bool,
-) -> jnp.ndarray:
-    """Apply RZ rotation gate."""
-    theta = params[0]
-    rz_matrix = jnp.array([[jnp.exp(-1j * theta / 2), 0], [0, jnp.exp(1j * theta / 2)]], dtype=jnp.complex64)
-    return _apply_single_gate(state, qubits, params, num_qubits, rz_matrix, big_endian)
-
-
-def parse_mlir_operations(mlir_string: str, param_values: List[float] = None) -> List[Dict]:
+def parse_mlir_operations(
+    mlir_string: str, num_qubits: int, param_values: List[float], little_endian: bool
+) -> List[Dict]:
     """
     Parse MLIR string and extract quantum operations.
 
     Args:
         mlir_string: MLIR code as string
+        num_qubits: Number of qubits in the circuit
         param_values: List of parameter values for parametric gates
+        little_endian: Whether to format bitstrings in little-endian order
 
     Returns:
         List of operation dictionaries with gate info
@@ -360,12 +175,35 @@ def parse_mlir_operations(mlir_string: str, param_values: List[float] = None) ->
     operations = []
     lines = mlir_string.strip().split("\n")
 
-    # Pre-allocate all qubits to maintain consistent SSA mapping
-    qubit_map = {}
-    next_qubit_id = 0
-
     # Track parameter mapping
     param_map = {}
+
+    def parse_args_and_append_op(gate_name, args):
+        # Parse arguments
+        arg_vars = [arg.strip() for arg in args.split(",")] if args.strip() else []
+
+        # Map qubit variables to consistent indices
+        qubit_indices = []
+        params = []
+        for arg_var in arg_vars:
+            if arg_var in param_map:
+                # This is a parameter argument
+                param_idx = param_map[arg_var]
+                if param_values and param_idx < len(param_values):
+                    params.append(param_values[param_idx])
+                else:
+                    params.append(0.0)  # Default value
+            else:
+                # Parse SSA name like "%1" to integer index 1
+                qubit_index = int(arg_var.replace("%", ""))
+                if not little_endian:
+                    # Reverse qubit index for big-endian
+                    qubit_index = num_qubits - 1 - qubit_index
+                qubit_indices.append(qubit_index)
+
+        # Get gate ID
+        gate_id = GATE_NAME_TO_ID.get(gate_name, GateID.IDENTITY)
+        operations.append({"gate_id": gate_id, "qubits": qubit_indices, "params": params, "gate_name": gate_name})
 
     for line in lines:
         line = line.strip()
@@ -390,32 +228,7 @@ def parse_mlir_operations(mlir_string: str, param_values: List[float] = None) ->
         match = re.match(r'%(\w+)\s*=\s*"([^"]+)"\(([^)]*)\)\s*:\s*\(([^)]*)\)\s*->\s*([^)]+)', line)
         if match:
             result_var, gate_name, args, input_types, output_type = match.groups()
-
-            # Parse arguments
-            arg_vars = [arg.strip() for arg in args.split(",")] if args.strip() else []
-
-            # Map qubit variables to consistent indices
-            qubit_indices = []
-            params = []
-            for arg_var in arg_vars:
-                if arg_var in param_map:
-                    # This is a parameter argument
-                    param_idx = param_map[arg_var]
-                    if param_values and param_idx < len(param_values):
-                        params.append(param_values[param_idx])
-                    else:
-                        params.append(0.0)  # Default value
-                else:
-                    # This is a qubit argument
-                    if arg_var not in qubit_map:
-                        qubit_map[arg_var] = next_qubit_id
-                        next_qubit_id += 1
-                    qubit_indices.append(qubit_map[arg_var])
-
-            # Get gate ID
-            gate_id = GATE_NAME_TO_ID.get(gate_name, GateID.IDENTITY)
-
-            operations.append({"gate_id": gate_id, "qubits": qubit_indices, "params": params, "gate_name": gate_name})
+            parse_args_and_append_op(gate_name, args)
             continue
 
         # Match quantum operations without return values (current format)
@@ -423,32 +236,7 @@ def parse_mlir_operations(mlir_string: str, param_values: List[float] = None) ->
         match = re.match(r'"([^"]+)"\(([^)]*)\)\s*:\s*\(([^)]*)\)\s*->\s*\(\)', line)
         if match:
             gate_name, args, input_types = match.groups()
-
-            # Parse arguments
-            arg_vars = [arg.strip() for arg in args.split(",")] if args.strip() else []
-
-            # Map qubit variables to consistent indices
-            qubit_indices = []
-            params = []
-            for arg_var in arg_vars:
-                if arg_var in param_map:
-                    # This is a parameter argument
-                    param_idx = param_map[arg_var]
-                    if param_values and param_idx < len(param_values):
-                        params.append(param_values[param_idx])
-                    else:
-                        params.append(0.0)  # Default value
-                else:
-                    # This is a qubit argument
-                    if arg_var not in qubit_map:
-                        qubit_map[arg_var] = next_qubit_id
-                        next_qubit_id += 1
-                    qubit_indices.append(qubit_map[arg_var])
-
-            # Get gate ID
-            gate_id = GATE_NAME_TO_ID.get(gate_name, GateID.IDENTITY)
-
-            operations.append({"gate_id": gate_id, "qubits": qubit_indices, "params": params, "gate_name": gate_name})
+            parse_args_and_append_op(gate_name, args)
 
     return operations
 
@@ -480,39 +268,212 @@ def encode_operations(operations: List[Dict]) -> jnp.ndarray:
     return jnp.array(encoded, dtype=jnp.float64)
 
 
-def simulate_from_mlir(
-    mlir_string: str,
+def simulate_circuit(
+    operations: jnp.ndarray,
     num_qubits: int,
-    param_values: List[float],
-    big_endian: bool,
-) -> Dict:
+    initial_state: Optional[jnp.ndarray],
+) -> jnp.ndarray:
     """
-    Simulate quantum circuit from MLIR string.
+    Simulate quantum circuit using JAX (non-JIT version for dynamic shapes).
 
     Args:
-        mlir_string: MLIR code as string
+        operations: Array of [gate_id, qubit_indices, parameters] for each operation
         num_qubits: Number of qubits in the circuit
-        param_values: List of parameter values for parametric gates
-        big_endian: Whether to use big-endian bit order (default True)
+        initial_state: Optional initial quantum state vector
 
     Returns:
-        Dictionary with simulation results
+        Final quantum state vector
     """
-    # Parse MLIR operations
-    operations = parse_mlir_operations(mlir_string, param_values)
+    # Initialize state vector |00...0⟩
+    if initial_state is None:
+        initial_state = jnp.zeros(2**num_qubits, dtype=jnp.complex64).at[0].set(1.0)
 
-    # Encode operations for JAX simulation
-    encoded_ops = encode_operations(operations)
+    # Apply operations sequentially (no JIT for dynamic shapes)
+    state = initial_state
+    for i in range(operations.shape[0]):
+        operation = operations[i]
+        gate_id = int(operation[0])
+        qubits = operation[1:3].astype(int)  # Max 2 qubits for current gates
+        params = operation[2:]  # Parameters start from index 2 (after qubits)
 
-    # Simulate circuit
-    final_state = simulate_circuit(encoded_ops, num_qubits, None, big_endian)
+        # Apply gate using vectorized operations
+        state = apply_gate_vectorized(state, gate_id, qubits, params, num_qubits)
 
-    # Calculate probabilities
-    probabilities = jnp.abs(final_state) ** 2
+    return state
 
-    return {
-        "final_state": final_state,
-        "probabilities": probabilities,
-        "num_qubits": num_qubits,
-        "num_operations": len(operations),
-    }
+
+def apply_gate_vectorized(
+    state: jnp.ndarray,
+    gate_id: int,
+    qubits: jnp.ndarray,
+    params: jnp.ndarray,
+    num_qubits: int,
+) -> jnp.ndarray:
+    """
+    Apply quantum gate using JAX vectorized operations.
+
+    Args:
+        state: Current quantum state vector
+        gate_id: Gate identifier (0-14)
+        qubits: Qubit indices [qubit0, qubit1] (padded with -1 for single-qubit gates)
+        params: Gate parameters for rotation gates
+        num_qubits: Total number of qubits
+
+    Returns:
+        Updated quantum state vector
+    """
+    # Simple implementation for basic gates
+    if gate_id <= GateID.T_DAGGER:  # Single-qubit gates
+        gate_matrix = GATE_MATRICES.get(gate_id, GATE_MATRICES[GateID.IDENTITY])
+        return _apply_single_gate(state, qubits, num_qubits, gate_matrix)
+    elif gate_id == GateID.CNOT:
+        return _apply_cx(state, qubits, num_qubits)
+    elif gate_id == GateID.CONTROLLED_Y:
+        return _apply_cy(state, qubits, num_qubits)
+    elif gate_id == GateID.CONTROLLED_Z:
+        return _apply_cz(state, qubits, num_qubits)
+    elif gate_id == GateID.ROTATION_X:
+        return _apply_rx(state, qubits, params, num_qubits)
+    elif gate_id == GateID.ROTATION_Y:
+        return _apply_ry(state, qubits, params, num_qubits)
+    elif gate_id == GateID.ROTATION_Z:
+        return _apply_rz(state, qubits, params, num_qubits)
+    else:
+        # For other gates, return state unchanged for now
+        return state
+
+
+def _apply_single_gate(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    num_qubits: int,
+    gate_matrix: jnp.ndarray,
+) -> jnp.ndarray:
+    """Apply single-qubit gate using tensor product operations."""
+    target_qubit = int(qubits[0])  # target qubit index
+
+    full_op = None
+    for i in range(num_qubits):
+        # If this is the target qubit, apply the gate matrix
+        if i == target_qubit:
+            op = gate_matrix
+        else:
+            op = jnp.eye(2, dtype=jnp.complex64)  # Identity for other qubits
+
+        # If this is the first operation, set it directly
+        if full_op is None:
+            full_op = op
+        else:
+            # Tensor product with previous operations
+            full_op = jnp.kron(op, full_op)
+
+    return full_op @ state
+
+
+def _apply_controlled_gate(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    gate_matrix: jnp.ndarray,
+    num_qubits: int,
+) -> jnp.ndarray:
+    # Control and target qubits
+    control, target = int(qubits[0]), int(qubits[1])
+    if control == target:
+        raise ValueError("Control and target qubits must be different.")
+
+    # Create the controlled gate matrix
+    dim = 1 << num_qubits
+    result = jnp.zeros_like(state)
+    visited = set()
+
+    for i in range(dim):
+        if i in visited:
+            continue
+
+        ctrl_bit = (i >> control) & 1
+        if ctrl_bit == 1:
+            j = i ^ (1 << target)  # flip target bit
+
+            if i == j:
+                v = jnp.array([state[i], 0])
+                new_v = gate_matrix @ v
+                result = result.at[i].add(new_v[0])
+            else:
+                v = jnp.array([state[i], state[j]])
+                new_v = gate_matrix @ v
+                result = result.at[i].add(new_v[0])
+                result = result.at[j].add(new_v[1])
+                visited.add(i)
+                visited.add(j)
+        else:
+            result = result.at[i].add(state[i])
+
+    return result
+
+
+def _apply_cx(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    num_qubits: int,
+) -> jnp.ndarray:
+    """Apply CNOT gate."""
+    return _apply_controlled_gate(state, qubits, GATE_MATRICES[GateID.PAULI_X], num_qubits)
+
+
+def _apply_cy(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    num_qubits: int,
+) -> jnp.ndarray:
+    """Apply controlled-Y gate."""
+    return _apply_controlled_gate(state, qubits, GATE_MATRICES[GateID.PAULI_Y], num_qubits)
+
+
+def _apply_cz(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    num_qubits: int,
+) -> jnp.ndarray:
+    """Apply controlled-Z gate."""
+    return _apply_controlled_gate(state, qubits, GATE_MATRICES[GateID.PAULI_Z], num_qubits)
+
+
+def _apply_rx(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    params: jnp.ndarray,
+    num_qubits: int,
+) -> jnp.ndarray:
+    """Apply RX rotation gate."""
+    theta = params[0]
+    rx_matrix = jnp.array(
+        [[jnp.cos(theta / 2), -1j * jnp.sin(theta / 2)], [-1j * jnp.sin(theta / 2), jnp.cos(theta / 2)]],
+        dtype=jnp.complex64,
+    )
+    return _apply_single_gate(state, qubits, num_qubits, rx_matrix)
+
+
+def _apply_ry(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    params: jnp.ndarray,
+    num_qubits: int,
+) -> jnp.ndarray:
+    """Apply RY rotation gate."""
+    theta = params[0]
+    ry_matrix = jnp.array(
+        [[jnp.cos(theta / 2), -jnp.sin(theta / 2)], [jnp.sin(theta / 2), jnp.cos(theta / 2)]], dtype=jnp.complex64
+    )
+    return _apply_single_gate(state, qubits, num_qubits, ry_matrix)
+
+
+def _apply_rz(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    params: jnp.ndarray,
+    num_qubits: int,
+) -> jnp.ndarray:
+    """Apply RZ rotation gate."""
+    theta = params[0]
+    rz_matrix = jnp.array([[jnp.exp(-1j * theta / 2), 0], [0, jnp.exp(1j * theta / 2)]], dtype=jnp.complex64)
+    return _apply_single_gate(state, qubits, num_qubits, rz_matrix)
