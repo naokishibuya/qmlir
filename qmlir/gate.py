@@ -8,17 +8,10 @@ class Gate:
         name: str,
         qubits: Tuple[int, ...],
         parameters: Tuple[Parameter, ...] = (),
-        *,
-        unitary: bool = True,
-        hermitian: bool = False,
-        self_inverse: bool = False,
     ):
         self.name = name
         self.qubits = qubits
         self.parameters = parameters
-        self.unitary = unitary
-        self.hermitian = hermitian
-        self.self_inverse = self_inverse
 
         # Register the gate in the current quantum circuit
         from .circuit import QuantumCircuit

@@ -1,4 +1,4 @@
-// RUN: test-quantum-dialect %s | FileCheck %s
+// RUN: quantum-opt %s | FileCheck %s
 
 module {
   func.func @test_quantum_generic() {

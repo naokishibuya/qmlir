@@ -6,6 +6,7 @@ using namespace mlir::quantum;
 #include "mlir/Dialect/Quantum/IR/QuantumOpsDialect.cpp.inc"
 
 void QuantumDialect::initialize() {
+  // Register operations
   addOperations<
 #define GET_OP_LIST
 #include "mlir/Dialect/Quantum/IR/QuantumOps.cpp.inc"

@@ -28,12 +28,12 @@ repos:
       - id: check-merge-conflict
       - id: debug-statements
 
-  # Run unit tests to ensure they pass
   - repo: local
     hooks:
+      # Run unit tests to ensure they pass
       - id: pytest
         name: Run unit tests
-        entry: python -m pytest
+        entry: coverage run -m pytest
         language: system
         types: [python]
         pass_filenames: false
@@ -41,9 +41,19 @@ repos:
         args: [tests/, -x, --tb=short, -q]
         stages: [pre-commit]
 
+      # Make sure unit test coverage is good
       - id: coverage-check
         name: Block push if coverage < 90%
-        entry: bash scripts/check_coverage.sh
+        entry: coverage report --fail-under=90
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-push]
+
+      # Run MLIR dialect tests
+      - id: check-quantum
+        name: Run MLIR quantum dialect tests
+        entry: bash -c '[ "$SKIP_QUANTUM_CHECK" = "1" ] || ninja -C build check-quantum'
         language: system
         pass_filenames: false
         always_run: true

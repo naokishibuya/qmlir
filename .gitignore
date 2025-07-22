@@ -54,3 +54,6 @@ __pycache__/
 
 # coverage
 .coverage
+
+# LLVM Lit test
+.lit_test_times.txt

@@ -1,5 +1,5 @@
 import pytest
-from dataclasses import dataclass
+from typing import Tuple
 from qmlir.circuit import QuantumCircuit
 from qmlir.gate import Gate
 from qmlir.operator import I, X, Y, Z, H, CX, CY, CZ, S, Sdg, T, Tdg, RX, RY, RZ
@@ -26,9 +26,6 @@ def test_pauli_gate(gate, circuit):
     assert circuit.num_qubits == 2
     assert len(inst.qubits) == 1
     assert inst.name in repr(inst)
-    assert inst.unitary
-    assert inst.hermitian
-    assert inst.self_inverse
 
 
 @pytest.mark.parametrize("gate", PHASE_GATES)
@@ -38,9 +35,6 @@ def test_phase_gate(gate, circuit):
     assert circuit.num_qubits == 2
     assert len(inst.qubits) == 1
     assert inst.name in repr(inst)
-    assert inst.unitary
-    assert inst.hermitian is False
-    assert inst.self_inverse is False
 
 
 @pytest.mark.parametrize("gate", TWO_QUBIT_GATES)
@@ -50,9 +44,6 @@ def test_two_qubit_gate(gate, circuit):
     assert circuit.num_qubits == 2
     assert len(inst.qubits) == 2
     assert inst.name in repr(inst)
-    assert inst.unitary
-    assert inst.hermitian is True
-    assert inst.self_inverse is True
 
 
 @pytest.mark.parametrize("gate", ROTATION_GATES)
@@ -64,29 +55,23 @@ def test_rotation_gate(gate, circuit):
     assert len(inst.qubits) == 1
     assert inst.name in repr(inst)
     assert inst.parameters[0].value == theta
-    assert inst.unitary
-    assert inst.hermitian is False
-    assert inst.self_inverse is False
 
 
 def test_unknown_gate_raises():
-    @dataclass(frozen=True)
-    class DummyMetadata:
-        name: str
-        kind: str
-        long_name: str
-        hermitian: bool
-        self_inverse: bool
-        unitary: bool = True
-
     class DummyGate:
-        metadata = DummyMetadata(
-            name="Dummy", kind="dummy", long_name="Dummy Gate", hermitian=False, self_inverse=False
-        )
+        def __init__(
+            self,
+            name: str,
+            qubits: Tuple[int, ...],
+            parameters: Tuple[Parameter, ...] = (),
+        ):
+            self.name = name
+            self.qubits = qubits
+            self.parameters = parameters
 
     qc = QuantumCircuit(1)
     with pytest.raises(TypeError, match="Expected Gate, got DummyGate"):
-        qc.append(DummyGate())
+        qc.append(DummyGate("X", (0, 1)))
 
 
 def test_rotation_operator_construction():

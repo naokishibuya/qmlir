@@ -96,11 +96,23 @@ This makes the `qmlir` package available in your venv, automatically discovering
 
 **1. Run MLIR tests:**
 
-At the project root, run:
+At the build directory, you can run the MLIR tests for the Quantum dialect:
+
+```bash
+cd ./build
+ninja check-quantum
+```
+
+Or munually run the `quantum-opt` tool on test files (.mlir) using:
+
+```bash
+./build/mlir/tools/quantum-opt mlir/test/Dialect/Quantum/double_x_test.mlir
+```
+
+With optimizations for self-inverse gates:
 
 ```bash
 ./build/mlir/tools/quantum-opt mlir/test/Dialect/Quantum/double_x_test.mlir --quantum-cancel-self-inverse
-./build/mlir/tools/quantum-opt mlir/test/Dialect/Quantum/bell_state.mlir --verify-diagnostics
 ```
 
 There are more examples in `examples/` directory.
@@ -129,14 +141,14 @@ See `examples/` directory for Python examples.
 - Register in `mlir/include/mlir/Dialect/Quantum/Passes/Passes.h`
 
 **3. Extend Python Library:**
-- Add gate operations in `qmlir/circuit.py`
-- Update MLIR generation in `qmlir/mlir_generator.py`
+- Add gate operations in `qmlir/circuit.py`, etc.
+- Update MLIR generation in `qmlir/mlir/transpiler.py`
 - Add tests in `tests/`
 
 **4. Development Workflow:**
 - All changes are automatically reflected due to `pip install -e .`
 - Run tests frequently with `pytest`
-- Use `examples/` for interactive development
+- Use `notebooks/` for interactive development
 - Test integration with `quantum-opt` tool
 
 **5. Code Formatting:**

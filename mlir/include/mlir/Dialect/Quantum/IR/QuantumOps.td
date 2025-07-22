@@ -19,6 +19,18 @@ def Quantum_Dialect : Dialect {
   }];
 }
 
+// -----------------------------------------------------------------------------
+// Custom traits
+// -----------------------------------------------------------------------------
+
+def SelfInverse : NativeOpTrait<"SelfInverse"> {
+  let cppNamespace = "::mlir::quantum";
+}
+
+def Hermitian : NativeOpTrait<"Hermitian"> {
+  let cppNamespace = "::mlir::quantum";
+}
+
 //===----------------------------------------------------------------------===//
 // Base quantum operation definition.
 //===----------------------------------------------------------------------===//
@@ -38,7 +50,7 @@ def Quantum_AllocOp : Quantum_Op<"alloc"> {
 // Single-qubit gates.
 //===----------------------------------------------------------------------===//
 
-def Quantum_IOp : Quantum_Op<"i"> {
+def Quantum_IOp : Quantum_Op<"i", [SelfInverse, Hermitian]> {
   let summary = "Identity gate";
   let description = [{
     Applies an identity gate to a qubit (no-op).
@@ -46,7 +58,7 @@ def Quantum_IOp : Quantum_Op<"i"> {
   let arguments = (ins AnyType:$qubit);
 }
 
-def Quantum_XOp : Quantum_Op<"x"> {
+def Quantum_XOp : Quantum_Op<"x", [SelfInverse, Hermitian]> {
   let summary = "Pauli-X gate";
   let description = [{
     Applies a Pauli-X gate to a qubit.
@@ -54,7 +66,7 @@ def Quantum_XOp : Quantum_Op<"x"> {
   let arguments = (ins AnyType:$qubit);
 }
 
-def Quantum_YOp : Quantum_Op<"y"> {
+def Quantum_YOp : Quantum_Op<"y", [SelfInverse, Hermitian]> {
   let summary = "Pauli-Y gate";
   let description = [{
     Applies a Pauli-Y gate to a qubit.
@@ -62,7 +74,7 @@ def Quantum_YOp : Quantum_Op<"y"> {
   let arguments = (ins AnyType:$qubit);
 }
 
-def Quantum_ZOp : Quantum_Op<"z"> {
+def Quantum_ZOp : Quantum_Op<"z", [SelfInverse, Hermitian]> {
   let summary = "Pauli-Z gate";
   let description = [{
     Applies a Pauli-Z gate to a qubit.
@@ -70,7 +82,7 @@ def Quantum_ZOp : Quantum_Op<"z"> {
   let arguments = (ins AnyType:$qubit);
 }
 
-def Quantum_HOp : Quantum_Op<"h"> {
+def Quantum_HOp : Quantum_Op<"h", [SelfInverse, Hermitian]> {
   let summary = "Hadamard gate";
   let description = [{
     Applies a Hadamard gate to a qubit.
@@ -118,7 +130,7 @@ def Quantum_TdgOp : Quantum_Op<"tdg"> {
 // Multi-qubit gates.
 //===----------------------------------------------------------------------===//
 
-def Quantum_CXOp : Quantum_Op<"cx"> {
+def Quantum_CXOp : Quantum_Op<"cx", [SelfInverse, Hermitian]> {
   let summary = "Controlled-X gate";
   let description = [{
     Applies a controlled-X gate with control and target qubits.
@@ -126,7 +138,7 @@ def Quantum_CXOp : Quantum_Op<"cx"> {
   let arguments = (ins AnyType:$control, AnyType:$target);
 }
 
-def Quantum_CYOp : Quantum_Op<"cy"> {
+def Quantum_CYOp : Quantum_Op<"cy", [SelfInverse, Hermitian]> {
   let summary = "Controlled-Y gate";
   let description = [{
     Applies a controlled-Y gate with control and target qubits.
@@ -134,7 +146,7 @@ def Quantum_CYOp : Quantum_Op<"cy"> {
   let arguments = (ins AnyType:$control, AnyType:$target);
 }
 
-def Quantum_CZOp : Quantum_Op<"cz"> {
+def Quantum_CZOp : Quantum_Op<"cz", [SelfInverse, Hermitian]> {
   let summary = "Controlled-Z gate";
   let description = [{
     Applies a controlled-Z gate with control and target qubits.

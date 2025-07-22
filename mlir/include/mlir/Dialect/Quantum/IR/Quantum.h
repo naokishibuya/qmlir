@@ -10,6 +10,8 @@
 #include "mlir/IR/Dialect.h"
 #include "mlir/IR/OpDefinition.h"
 
+#include "mlir/Dialect/Quantum/IR/QuantumTraits.h"
+
 #include "mlir/Dialect/Quantum/IR/QuantumOpsDialect.h.inc"
 
 #define GET_OP_CLASSES

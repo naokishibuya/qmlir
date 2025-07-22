@@ -1,5 +1,9 @@
-//===- QuantumCancelSelfInversePass.cpp - Cancel self-inverse gates -*- C++
-//-*-===//
+//===- QuantumCancelSelfInversePass.cpp - Cancel self-inverse gates -------===//
+//
+// This pass cancels pairs of self-inverse gates (e.g., X X → I) when they act
+// on the same qubits and are not interrupted by interfering gates.
+//
+//===----------------------------------------------------------------------===//
 
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Quantum/IR/Quantum.h"
@@ -8,143 +12,47 @@
 #include "mlir/Pass/Pass.h"
 #include "mlir/Transforms/GreedyPatternRewriteDriver.h"
 
-namespace mlir {
-namespace quantum {
-#define GEN_PASS_DEF_CANCELSELFINVERSEPASS
-#include "mlir/Dialect/Quantum/Passes/Passes.h.inc"
-} // namespace quantum
-} // namespace mlir
-
 using namespace mlir;
 using namespace mlir::quantum;
 
 namespace {
+#define GEN_PASS_DEF_CANCELSELFINVERSEPASS
+#include "mlir/Dialect/Quantum/Passes/Passes.h.inc"
 
 struct CancelSelfInversePass
-    : public mlir::quantum::impl::CancelSelfInversePassBase<
-          CancelSelfInversePass> {
+    : public impl::CancelSelfInversePassBase<CancelSelfInversePass> {
   void runOnOperation() override;
 };
 
-/// Generic pattern to cancel involutory (self-inverse) operations on
-/// the same qubit, even when separated by operations on other qubits.
-/// Involutory gates satisfy: G * G = I (identity) Examples: X, Y, Z, H, I
-template <typename OpType>
-struct CancelInvolutoryPattern : public OpRewritePattern<OpType> {
-  using OpRewritePattern<OpType>::OpRewritePattern;
+/// Generic pattern to cancel self-inverse operations.
+/// Works for any op with the SelfInverse trait.
+struct CancelGenericSelfInversePattern : public RewritePattern {
+  CancelGenericSelfInversePattern(MLIRContext *ctx)
+      : RewritePattern(MatchAnyOpTypeTag(), /*benefit=*/1, ctx) {}
 
-  LogicalResult matchAndRewrite(OpType op,
+  LogicalResult matchAndRewrite(Operation *op,
                                 PatternRewriter &rewriter) const override {
-    Value qubit = op.getQubit();
+    // Only match ops with the SelfInverse trait
+    if (!op->hasTrait<mlir::quantum::SelfInverse>())
+      return failure();
 
-    // Look for the next operation of the same type on the same qubit
-    Operation *nextOp = op.getOperation()->getNextNode();
+    auto operands = op->getOperands();
+    Operation *nextOp = op->getNextNode();
+
     while (nextOp) {
-      // Check if it's the same operation type
-      if (auto nextSameOp = dyn_cast<OpType>(nextOp)) {
-        // Check if they operate on the same qubit
-        if (nextSameOp.getQubit() == qubit) {
-          // Remove both operations (involutory: Op * Op = I)
-          rewriter.eraseOp(nextSameOp);
-          rewriter.eraseOp(op);
-          return success();
-        }
+      // Skip non-identical ops
+      if (nextOp->getName() == op->getName() &&
+          nextOp->getOperands() == operands) {
+        // Cancel both ops
+        rewriter.eraseOp(nextOp);
+        rewriter.eraseOp(op);
+        return success();
       }
 
-      // Check if this operation interferes with our qubit
-      // For single-qubit operations, only operations on the same qubit
-      // interfere
-      if (auto singleQubitOp = dyn_cast<IOp>(nextOp)) {
-        if (singleQubitOp.getQubit() == qubit) {
-          return failure();
-        }
-      } else if (auto singleQubitOp = dyn_cast<XOp>(nextOp)) {
-        if (singleQubitOp.getQubit() == qubit) {
-          return failure();
-        }
-      } else if (auto singleQubitOp = dyn_cast<YOp>(nextOp)) {
-        if (singleQubitOp.getQubit() == qubit) {
-          return failure();
-        }
-      } else if (auto singleQubitOp = dyn_cast<ZOp>(nextOp)) {
-        if (singleQubitOp.getQubit() == qubit) {
-          return failure();
-        }
-      } else if (auto singleQubitOp = dyn_cast<HOp>(nextOp)) {
-        if (singleQubitOp.getQubit() == qubit) {
-          return failure();
-        }
-      } else if (auto cxOp = dyn_cast<CXOp>(nextOp)) {
-        if (cxOp.getControl() == qubit || cxOp.getTarget() == qubit) {
-          // CX operation involves our qubit - can't cancel
-          return failure();
-        }
-      }
-
-      nextOp = nextOp->getNextNode();
-    }
-
-    return failure();
-  }
-};
-
-/// Specialized pattern for CX gates (two-qubit operations)
-struct CancelCXPattern : public OpRewritePattern<CXOp> {
-  using OpRewritePattern<CXOp>::OpRewritePattern;
-
-  LogicalResult matchAndRewrite(CXOp cxOp,
-                                PatternRewriter &rewriter) const override {
-    Value control = cxOp.getControl();
-    Value target = cxOp.getTarget();
-
-    // Look for the next CX operation with the same control and target
-    Operation *nextOp = cxOp.getOperation()->getNextNode();
-    while (nextOp) {
-      // Check if it's another CX operation
-      if (auto nextCXOp = dyn_cast<CXOp>(nextOp)) {
-        // Check if they have the same control and target qubits
-        if (nextCXOp.getControl() == control &&
-            nextCXOp.getTarget() == target) {
-          // Remove both operations (CX * CX = I)
-          rewriter.eraseOp(nextCXOp);
-          rewriter.eraseOp(cxOp);
-          return success();
-        }
-      }
-
-      // Check if this operation interferes with our control or target qubits
-      if (auto singleQubitOp = dyn_cast<IOp>(nextOp)) {
-        if (singleQubitOp.getQubit() == control ||
-            singleQubitOp.getQubit() == target) {
-          return failure();
-        }
-      } else if (auto singleQubitOp = dyn_cast<XOp>(nextOp)) {
-        if (singleQubitOp.getQubit() == control ||
-            singleQubitOp.getQubit() == target) {
-          return failure();
-        }
-      } else if (auto singleQubitOp = dyn_cast<YOp>(nextOp)) {
-        if (singleQubitOp.getQubit() == control ||
-            singleQubitOp.getQubit() == target) {
-          return failure();
-        }
-      } else if (auto singleQubitOp = dyn_cast<ZOp>(nextOp)) {
-        if (singleQubitOp.getQubit() == control ||
-            singleQubitOp.getQubit() == target) {
-          return failure();
-        }
-      } else if (auto singleQubitOp = dyn_cast<HOp>(nextOp)) {
-        if (singleQubitOp.getQubit() == control ||
-            singleQubitOp.getQubit() == target) {
-          return failure();
-        }
-      } else if (auto otherCXOp = dyn_cast<CXOp>(nextOp)) {
-        if (otherCXOp.getControl() == control ||
-            otherCXOp.getControl() == target ||
-            otherCXOp.getTarget() == control ||
-            otherCXOp.getTarget() == target) {
-          return failure();
-        }
+      // If any of the same operands are used, cancel attempt fails
+      for (Value operand : operands) {
+        if (llvm::is_contained(nextOp->getOperands(), operand))
+          return failure(); // Interfering op found
       }
 
       nextOp = nextOp->getNextNode();
@@ -158,15 +66,7 @@ void CancelSelfInversePass::runOnOperation() {
   auto func = getOperation();
 
   RewritePatternSet patterns(&getContext());
-
-  // Add patterns for all involutory (self-inverse) gates
-  patterns.add<CancelInvolutoryPattern<IOp>>(&getContext());
-  patterns.add<CancelInvolutoryPattern<XOp>>(&getContext());
-  patterns.add<CancelInvolutoryPattern<YOp>>(&getContext());
-  patterns.add<CancelInvolutoryPattern<ZOp>>(&getContext());
-  patterns.add<CancelInvolutoryPattern<HOp>>(&getContext());
-  patterns.add<CancelCXPattern>(&getContext());
-  // Add more involutory gates here as needed
+  patterns.add<CancelGenericSelfInversePattern>(&getContext());
 
   if (failed(applyPatternsGreedily(func, std::move(patterns)))) {
     signalPassFailure();
