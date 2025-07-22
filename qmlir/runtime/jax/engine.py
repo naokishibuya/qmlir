@@ -18,48 +18,78 @@ jax.config.update("jax_enable_x64", True)
 class GateID(IntEnum):
     """Enumeration of quantum gate identifiers for JAX simulation."""
 
-    IDENTITY = 0
-    PAULI_X = 1
-    PAULI_Y = 2
-    PAULI_Z = 3
-    HADAMARD = 4
-    S_GATE = 5
-    T_GATE = 6
-    S_DAGGER = 7
-    T_DAGGER = 8
-    CNOT = 9
-    CONTROLLED_Y = 10
-    CONTROLLED_Z = 11
-    ROTATION_X = 12
-    ROTATION_Y = 13
-    ROTATION_Z = 14
+    # fmt: off
+    I   =  0  # Identity gate  # noqa: E741
+    X   =  1  # Pauli-X gate (NOT gate)
+    Y   =  2  # Pauli-Y gate
+    Z   =  3  # Pauli-Z gate
+    H   =  4  # Hadamard gate
+    S   =  5  # Phase gate
+    T   =  6  # T gate (π/8 gate)
+    Sdg =  7  # S dagger (conjugate transpose of S)
+    Tdg =  8  # T dagger (conjugate transpose of T)
+    CX  =  9  # CNOT, controlled-X gate
+    CY  = 10  # Controlled-Y gate
+    CZ  = 11  # Controlled-Z gate
+    CCX = 12  # Toffoli gate
+    CCY = 13  # Double controlled Y gate
+    CCZ = 14  # Double controlled Z gate
+    RX  = 15  # Single-qubit rotation around X axis
+    RY  = 16  # Single-qubit rotation around Y axis
+    RZ  = 17  # Single-qubit rotation around Z axis
+    # fmt: on
+
+
+# Number of qubits and params for each gate type
+# fmt: off
+GATE_ARITY = {
+    GateID.I  : (1, 0),
+    GateID.X  : (1, 0),
+    GateID.Y  : (1, 0),
+    GateID.Z  : (1, 0),
+    GateID.H  : (1, 0),
+    GateID.S  : (1, 0),
+    GateID.T  : (1, 0),
+    GateID.Sdg: (1, 0),
+    GateID.Tdg: (1, 0),
+    GateID.CX : (2, 0),
+    GateID.CY : (2, 0),
+    GateID.CZ : (2, 0),
+    GateID.CCX: (3, 0),
+    GateID.CCY: (3, 0),
+    GateID.CCZ: (3, 0),
+    GateID.RX : (1, 1),
+    GateID.RY : (1, 1),
+    GateID.RZ : (1, 1),
+}
+# fmt: on
 
 
 # Pre-define all gate matrices as JAX arrays (optimized for JIT)
 GATE_MATRICES = {
-    GateID.IDENTITY: jnp.eye(2, dtype=jnp.complex64),
-    GateID.PAULI_X: jnp.array(
+    GateID.I: jnp.eye(2, dtype=jnp.complex64),
+    GateID.X: jnp.array(
         [
             [0, 1],
             [1, 0],
         ],
         dtype=jnp.complex64,
     ),
-    GateID.PAULI_Y: jnp.array(
+    GateID.Y: jnp.array(
         [
             [0, -1j],
             [1j, 0],
         ],
         dtype=jnp.complex64,
     ),
-    GateID.PAULI_Z: jnp.array(
+    GateID.Z: jnp.array(
         [
             [1, 0],
             [0, -1],
         ],
         dtype=jnp.complex64,
     ),
-    GateID.HADAMARD: jnp.array(
+    GateID.H: jnp.array(
         [
             [1, 1],
             [1, -1],
@@ -67,28 +97,28 @@ GATE_MATRICES = {
         dtype=jnp.complex64,
     )
     / jnp.sqrt(2),
-    GateID.S_GATE: jnp.array(
+    GateID.S: jnp.array(
         [
             [1, 0],
             [0, 1j],
         ],
         dtype=jnp.complex64,
     ),
-    GateID.T_GATE: jnp.array(
+    GateID.T: jnp.array(
         [
             [1, 0],
             [0, jnp.exp(1j * jnp.pi / 4)],
         ],
         dtype=jnp.complex64,
     ),
-    GateID.S_DAGGER: jnp.array(
+    GateID.Sdg: jnp.array(
         [
             [1, 0],
             [0, -1j],
         ],
         dtype=jnp.complex64,
     ),
-    GateID.T_DAGGER: jnp.array(
+    GateID.Tdg: jnp.array(
         [
             [1, 0],
             [0, jnp.exp(-1j * jnp.pi / 4)],
@@ -99,21 +129,24 @@ GATE_MATRICES = {
 
 # Gate name to ID mapping
 GATE_NAME_TO_ID = {
-    "quantum.i": GateID.IDENTITY,
-    "quantum.x": GateID.PAULI_X,
-    "quantum.y": GateID.PAULI_Y,
-    "quantum.z": GateID.PAULI_Z,
-    "quantum.h": GateID.HADAMARD,
-    "quantum.s": GateID.S_GATE,
-    "quantum.t": GateID.T_GATE,
-    "quantum.sdg": GateID.S_DAGGER,
-    "quantum.tdg": GateID.T_DAGGER,
-    "quantum.cx": GateID.CNOT,
-    "quantum.cy": GateID.CONTROLLED_Y,
-    "quantum.cz": GateID.CONTROLLED_Z,
-    "quantum.rx": GateID.ROTATION_X,
-    "quantum.ry": GateID.ROTATION_Y,
-    "quantum.rz": GateID.ROTATION_Z,
+    "quantum.i": GateID.I,
+    "quantum.x": GateID.X,
+    "quantum.y": GateID.Y,
+    "quantum.z": GateID.Z,
+    "quantum.h": GateID.H,
+    "quantum.s": GateID.S,
+    "quantum.t": GateID.T,
+    "quantum.sdg": GateID.Sdg,
+    "quantum.tdg": GateID.Tdg,
+    "quantum.cx": GateID.CX,
+    "quantum.cy": GateID.CY,
+    "quantum.cz": GateID.CZ,
+    "quantum.ccx": GateID.CCX,
+    "quantum.ccy": GateID.CCY,
+    "quantum.ccz": GateID.CCZ,
+    "quantum.rx": GateID.RX,
+    "quantum.ry": GateID.RY,
+    "quantum.rz": GateID.RZ,
 }
 
 
@@ -177,6 +210,10 @@ def parse_mlir_operations(
     param_map = {}
 
     def parse_args_and_append_op(gate_name, args):
+        if gate_name not in GATE_NAME_TO_ID:
+            return  # Skip things like "quantum.alloc" - we want to parse only gates here
+        gate_id = GATE_NAME_TO_ID[gate_name]
+
         # Parse arguments
         arg_vars = [arg.strip() for arg in args.split(",")] if args.strip() else []
 
@@ -200,7 +237,6 @@ def parse_mlir_operations(
                 qubit_indices.append(qubit_index)
 
         # Get gate ID
-        gate_id = GATE_NAME_TO_ID.get(gate_name, GateID.IDENTITY)
         operations.append({"gate_id": gate_id, "qubits": qubit_indices, "params": params, "gate_name": gate_name})
 
     for line in lines:
@@ -242,25 +278,21 @@ def parse_mlir_operations(
 def encode_operations(operations: List[Dict]) -> jnp.ndarray:
     """
     Encode operations into JAX array format.
-
-    Args:
-        operations: List of operation dictionaries
-
-    Returns:
-        JAX array of operations
+    Each row: [gate_id, q0, q1, q2, ..., param0, param1, ...]
     """
     if not operations:
         return jnp.array([])
 
-    # Each operation: [gate_id, qubit0, qubit1, param0, param1, ...]
+    max_qubits = max(len(op.get("qubits", [])) for op in operations)
     max_params = max(len(op.get("params", [])) for op in operations)
-    operation_size = 3 + max_params  # gate_id + 2 qubits + params
+    operation_size = 1 + max_qubits + max_params  # gate_id + qubits + params
 
     encoded = []
     for op in operations:
-        row = [op["gate_id"]] + op["qubits"] + op.get("params", [])
-        # Pad with zeros to match operation_size
-        row.extend([0.0] * (operation_size - len(row)))
+        row = [op["gate_id"]]
+        row += op.get("qubits", [])
+        row += op.get("params", [])
+        row.extend([0.0] * (operation_size - len(row)))  # pad
         encoded.append(row)
 
     return jnp.array(encoded, dtype=jnp.float64)
@@ -290,9 +322,15 @@ def simulate_circuit(
     state = initial_state
     for i in range(operations.shape[0]):
         operation = operations[i]
+
+        # Extract gate ID, qubits, and parameters
         gate_id = int(operation[0])
-        qubits = operation[1:3].astype(int)  # Max 2 qubits for current gates
-        params = operation[2:]  # Parameters start from index 2 (after qubits)
+        if gate_id not in GATE_ARITY:
+            raise ValueError(f"Unsupported gate ID: {gate_id}")
+        n_qubits, n_params = GATE_ARITY[gate_id]
+
+        qubits = operation[1 : 1 + n_qubits].astype(int)
+        params = operation[1 + n_qubits : 1 + n_qubits + n_params]
 
         # Apply gate using vectorized operations
         state = apply_gate_vectorized(state, gate_id, qubits, params, num_qubits)
@@ -312,8 +350,8 @@ def apply_gate_vectorized(
 
     Args:
         state: Current quantum state vector
-        gate_id: Gate identifier (0-14)
-        qubits: Qubit indices [qubit0, qubit1] (padded with -1 for single-qubit gates)
+        gate_id: Gate identifier (0-17)
+        qubits: Qubit indices to apply the gate to
         params: Gate parameters for rotation gates
         num_qubits: Total number of qubits
 
@@ -321,20 +359,26 @@ def apply_gate_vectorized(
         Updated quantum state vector
     """
     # Simple implementation for basic gates
-    if gate_id <= GateID.T_DAGGER:  # Single-qubit gates
-        gate_matrix = GATE_MATRICES.get(gate_id, GATE_MATRICES[GateID.IDENTITY])
+    if gate_id <= GateID.Tdg:  # Single-qubit gates
+        gate_matrix = GATE_MATRICES.get(gate_id, GATE_MATRICES[GateID.I])
         return _apply_single_gate(state, qubits, num_qubits, gate_matrix)
-    elif gate_id == GateID.CNOT:
+    elif gate_id == GateID.CX:
         return _apply_cx(state, qubits, num_qubits)
-    elif gate_id == GateID.CONTROLLED_Y:
+    elif gate_id == GateID.CY:
         return _apply_cy(state, qubits, num_qubits)
-    elif gate_id == GateID.CONTROLLED_Z:
+    elif gate_id == GateID.CZ:
         return _apply_cz(state, qubits, num_qubits)
-    elif gate_id == GateID.ROTATION_X:
+    elif gate_id == GateID.CCX:
+        return _apply_ccx(state, qubits, num_qubits)
+    elif gate_id == GateID.CCY:
+        return _apply_ccy(state, qubits, num_qubits)
+    elif gate_id == GateID.CCZ:
+        return _apply_ccz(state, qubits, num_qubits)
+    elif gate_id == GateID.RX:
         return _apply_rx(state, qubits, params, num_qubits)
-    elif gate_id == GateID.ROTATION_Y:
+    elif gate_id == GateID.RY:
         return _apply_ry(state, qubits, params, num_qubits)
-    elif gate_id == GateID.ROTATION_Z:
+    elif gate_id == GateID.RZ:
         return _apply_rz(state, qubits, params, num_qubits)
     else:
         # For other gates, return state unchanged for now
@@ -388,21 +432,17 @@ def _apply_controlled_gate(
         if i in visited:
             continue
 
-        ctrl_bit = (i >> control) & 1
-        if ctrl_bit == 1:
-            j = i ^ (1 << target)  # flip target bit
+        if ((i >> control) & 1) == 1:
+            j = i ^ (1 << target)  # Flip target bit
 
-            if i == j:
-                v = jnp.array([state[i], 0])
-                new_v = gate_matrix @ v
-                result = result.at[i].add(new_v[0])
-            else:
-                v = jnp.array([state[i], state[j]])
-                new_v = gate_matrix @ v
-                result = result.at[i].add(new_v[0])
-                result = result.at[j].add(new_v[1])
-                visited.add(i)
-                visited.add(j)
+            v = jnp.array([state[i], state[j]])
+            new_v = gate_matrix @ v
+
+            result = result.at[i].add(new_v[0])
+            result = result.at[j].add(new_v[1])
+
+            visited.add(i)
+            visited.add(j)
         else:
             result = result.at[i].add(state[i])
 
@@ -415,7 +455,7 @@ def _apply_cx(
     num_qubits: int,
 ) -> jnp.ndarray:
     """Apply CNOT gate."""
-    return _apply_controlled_gate(state, qubits, GATE_MATRICES[GateID.PAULI_X], num_qubits)
+    return _apply_controlled_gate(state, qubits, GATE_MATRICES[GateID.X], num_qubits)
 
 
 def _apply_cy(
@@ -424,7 +464,7 @@ def _apply_cy(
     num_qubits: int,
 ) -> jnp.ndarray:
     """Apply controlled-Y gate."""
-    return _apply_controlled_gate(state, qubits, GATE_MATRICES[GateID.PAULI_Y], num_qubits)
+    return _apply_controlled_gate(state, qubits, GATE_MATRICES[GateID.Y], num_qubits)
 
 
 def _apply_cz(
@@ -433,7 +473,74 @@ def _apply_cz(
     num_qubits: int,
 ) -> jnp.ndarray:
     """Apply controlled-Z gate."""
-    return _apply_controlled_gate(state, qubits, GATE_MATRICES[GateID.PAULI_Z], num_qubits)
+    return _apply_controlled_gate(state, qubits, GATE_MATRICES[GateID.Z], num_qubits)
+
+
+def _apply_controlled_controlled_gate(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    gate_matrix: jnp.ndarray,
+    num_qubits: int,
+) -> jnp.ndarray:
+    """Apply controlled-controlled gate (Toffoli or similar)."""
+    control1, control2, target = int(qubits[0]), int(qubits[1]), int(qubits[2])
+    if control1 == control2 or control1 == target or control2 == target:
+        raise ValueError("All qubits must be distinct.")
+
+    # Create the controlled-controlled gate matrix
+    dim = 1 << num_qubits
+    result = jnp.zeros_like(state)
+    visited = set()
+
+    for i in range(dim):
+        if i in visited:
+            continue
+
+        ctrl1_bit = (i >> control1) & 1
+        ctrl2_bit = (i >> control2) & 1
+
+        if ctrl1_bit == 1 and ctrl2_bit == 1:
+            j = i ^ (1 << target)  # flip target bit
+
+            v = jnp.array([state[i], state[j]])
+            new_v = gate_matrix @ v
+
+            result = result.at[i].add(new_v[0])
+            result = result.at[j].add(new_v[1])
+
+            visited.add(i)
+            visited.add(j)
+        else:
+            result = result.at[i].add(state[i])
+
+    return result
+
+
+def _apply_ccx(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    num_qubits: int,
+) -> jnp.ndarray:
+    """Apply Toffoli gate (CCX)."""
+    return _apply_controlled_controlled_gate(state, qubits, GATE_MATRICES[GateID.X], num_qubits)
+
+
+def _apply_ccy(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    num_qubits: int,
+) -> jnp.ndarray:
+    """Apply double controlled Y gate (CCY)."""
+    return _apply_controlled_controlled_gate(state, qubits, GATE_MATRICES[GateID.Y], num_qubits)
+
+
+def _apply_ccz(
+    state: jnp.ndarray,
+    qubits: jnp.ndarray,
+    num_qubits: int,
+) -> jnp.ndarray:
+    """Apply double controlled Z gate (CCZ)."""
+    return _apply_controlled_controlled_gate(state, qubits, GATE_MATRICES[GateID.Z], num_qubits)
 
 
 def _apply_rx(

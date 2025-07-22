@@ -184,3 +184,33 @@ def Quantum_RZOp : Quantum_Op<"rz"> {
   }];
   let arguments = (ins AnyType:$qubit, F64:$angle);
 }
+
+//===----------------------------------------------------------------------===//
+// Toffoli gates.
+//===----------------------------------------------------------------------===//
+def Quantum_CCXOp : Quantum_Op<"ccx", [SelfInverse, Hermitian]> {
+  let summary = "Toffoli gate (CCX)";
+  let description = [{
+    Applies a Toffoli gate with two control qubits and one target qubit.
+    The target qubit is flipped if both control qubits are in state |1>.
+  }];
+  let arguments = (ins AnyType:$control1, AnyType:$control2, AnyType:$target);
+}
+
+def Quantum_CCYOp : Quantum_Op<"ccy", [SelfInverse, Hermitian]> {
+  let summary = "Double controlled Y gate";
+  let description = [{
+    Applies a controlled-Y gate with two control qubits and one target qubit.
+    The target qubit is flipped if both control qubits are in state |1>.
+  }];
+  let arguments = (ins AnyType:$control1, AnyType:$control2, AnyType:$target);
+}
+
+def Quantum_CCZOp : Quantum_Op<"ccz", [SelfInverse, Hermitian]> {
+  let summary = "Double controlled Z gate";
+  let description = [{
+    Applies a controlled-Z gate with two control qubits and one target qubit.
+    The target qubit is flipped if both control qubits are in state |1>.
+  }];
+  let arguments = (ins AnyType:$control1, AnyType:$control2, AnyType:$target);
+}

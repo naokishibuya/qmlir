@@ -2,7 +2,7 @@ import pytest
 from typing import Tuple
 from qmlir.circuit import QuantumCircuit
 from qmlir.gate import Gate
-from qmlir.operator import I, X, Y, Z, H, CX, CY, CZ, S, Sdg, T, Tdg, RX, RY, RZ
+from qmlir.operator import I, X, Y, Z, H, CX, CY, CZ, CCX, CCY, CCZ, S, Sdg, T, Tdg, RX, RY, RZ
 from qmlir.parameter import Parameter
 
 
@@ -11,19 +11,20 @@ PAULI_GATES = [I, X, Y, Z]
 HADMARD_GATES = [H]
 PHASE_GATES = [S, Sdg, T, Tdg]
 TWO_QUBIT_GATES = [CX, CY, CZ]
+THREE_QUBIT_GATES = [CCX, CCY, CCZ]
 ROTATION_GATES = [RX, RY, RZ]
 
 
 @pytest.fixture
 def circuit():
-    return QuantumCircuit(2)
+    return QuantumCircuit(3)
 
 
 @pytest.mark.parametrize("gate", PAULI_GATES + HADMARD_GATES)
 def test_pauli_gate(gate, circuit):
     with circuit:
         inst = gate(0)
-    assert circuit.num_qubits == 2
+    assert circuit.num_qubits == 3
     assert len(inst.qubits) == 1
     assert inst.name in repr(inst)
 
@@ -32,7 +33,7 @@ def test_pauli_gate(gate, circuit):
 def test_phase_gate(gate, circuit):
     with circuit:
         inst = gate(0)
-    assert circuit.num_qubits == 2
+    assert circuit.num_qubits == 3
     assert len(inst.qubits) == 1
     assert inst.name in repr(inst)
 
@@ -41,8 +42,17 @@ def test_phase_gate(gate, circuit):
 def test_two_qubit_gate(gate, circuit):
     with circuit:
         inst = gate(0, 1)
-    assert circuit.num_qubits == 2
+    assert circuit.num_qubits == 3
     assert len(inst.qubits) == 2
+    assert inst.name in repr(inst)
+
+
+@pytest.mark.parametrize("gate", THREE_QUBIT_GATES)
+def test_three_qubit_gate(gate, circuit):
+    with circuit:
+        inst = gate(0, 1, 2)
+    assert circuit.num_qubits == 3
+    assert len(inst.qubits) == 3
     assert inst.name in repr(inst)
 
 
@@ -51,7 +61,7 @@ def test_rotation_gate(gate, circuit):
     with circuit:
         theta = 1.23
         inst = gate(theta)(0)
-    assert circuit.num_qubits == 2
+    assert circuit.num_qubits == 3
     assert len(inst.qubits) == 1
     assert inst.name in repr(inst)
     assert inst.parameters[0].value == theta
