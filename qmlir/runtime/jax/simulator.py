@@ -11,8 +11,7 @@ from typing import Dict
 from ...circuit import QuantumCircuit
 from ...observable import Observable
 from ...operator import Z
-from ...mlir import circuit_to_mlir, apply_passes
-from .engine import simulate_from_mlir
+from .circuit import simulate_circuit
 from .observable import evaluate_observable
 
 
@@ -49,32 +48,10 @@ class JaxSimulator:
 
     def statevector(self, circuit: QuantumCircuit) -> jnp.ndarray:
         """Get the final state vector of the circuit."""
-        results = self._simulate_circuit(circuit)
-        return results["final_state"]
+        results = simulate_circuit(circuit, self.optimize_circuit)
+        return results["statevector"]
 
     def probabilities(self, circuit: QuantumCircuit) -> jnp.ndarray:
         """Calculate measurement probabilities."""
-        results = self._simulate_circuit(circuit)
+        results = simulate_circuit(circuit, self.optimize_circuit)
         return results["probabilities"]
-
-    def _simulate_circuit(self, circuit: QuantumCircuit) -> Dict:
-        """Internal method to simulate a circuit and return results."""
-        # Step 1: Transpile circuit to MLIR
-        mlir_code = circuit_to_mlir(circuit)
-
-        # Step 2: Apply optimization passes if requested
-        if self.optimize_circuit:
-            mlir_code = apply_passes(mlir_code)
-        circuit.compiled_mlir = mlir_code.strip()  # Store compiled MLIR in circuit for reference
-
-        # Step 3: Collect parameter values from circuit
-        param_values = []
-        param_ids_seen = set()
-        for gate in circuit.gates:
-            for param in gate.parameters:
-                if param.id not in param_ids_seen:
-                    param_values.append(param.value)
-                    param_ids_seen.add(param.id)
-
-        # Step 4: Simulate with JAX runtime
-        return simulate_from_mlir(mlir_code, circuit.num_qubits, param_values, circuit.little_endian)
