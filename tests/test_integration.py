@@ -205,7 +205,7 @@ class TestErrorHandling:
         circuit = QuantumCircuit(1)
 
         with pytest.raises(IndexError, match="list index out of range"):
-            circuit.operators[1]
+            circuit.gates[1]
 
     def test_invalid_gate_parameters(self):
         """Test error handling for invalid gate parameters."""

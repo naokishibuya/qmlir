@@ -1,5 +1,3 @@
-"""Tests for qmlir.runtime.jax.engine module."""
-
 import jax.numpy as jnp
 from qmlir.runtime.jax.engine import (
     simulate_from_mlir,

@@ -1,5 +1,3 @@
-"""Tests for qmlir.runtime.jax.simulator module."""
-
 import jax.numpy as jnp
 import pytest
 from qmlir.operator import CX, H, X, Z
@@ -86,5 +84,5 @@ def test_observable_on_011_state():
 
 def test_tensor_product_duplicate_qubit_raises():
     """Ensure tensor product with repeated qubit index raises ValueError."""
-    with pytest.raises(ValueError, match="duplicate qubit indices"):
+    with pytest.raises(ValueError, match="Duplicate qubit"):
         _ = X(0) @ X(0)

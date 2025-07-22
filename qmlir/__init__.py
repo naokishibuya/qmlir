@@ -1,13 +1,14 @@
 from .circuit import QuantumCircuit
-from .operator import Operator, Observable
+from .gate import Gate
+from .observable import Observable
 from .parameter import Parameter
 from .runtime import JaxSimulator
 
 
 __all__ = [
     "JaxSimulator",
+    "Gate",
     "Observable",
-    "Operator",
     "Parameter",
     "QuantumCircuit",
 ]

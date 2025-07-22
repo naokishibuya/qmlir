@@ -6,7 +6,7 @@ representation using the quantum dialect, and provides optimization capabilities
 
 import subprocess
 from ..circuit import QuantumCircuit
-from ..operator import Operator
+from ..gate import Gate
 from .config import get_quantum_opt_path  # This will also ensure LLVM/MLIR bindings
 from mlir import ir
 
@@ -22,10 +22,10 @@ def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str
         MLIR string representation of the circuit
     """
     param_index_map = {}
-    for operator in circuit.operators:
-        if not isinstance(operator, Operator):
-            raise AssertionError(f"Unknown operator: {operator.__class__.__name__}")
-        for param in operator.parameters:
+    for gate in circuit.gates:
+        if not isinstance(gate, Gate):
+            raise AssertionError(f"Unknown gate: {gate.__class__.__name__}")
+        for param in gate.parameters:
             if param.id not in param_index_map:
                 param_index_map[param.id] = len(param_index_map)
 
@@ -56,13 +56,13 @@ def circuit_to_mlir(circuit: QuantumCircuit, function_name: str = "main") -> str
                     i: ir.Operation.create("quantum.alloc", results=[i32]).result for i in range(circuit.num_qubits)
                 }
 
-                for operator in circuit.operators:
-                    name = operator.name.lower()
-                    qubits = [ssa_qubits[q] for q in operator.qubits]
+                for gate in circuit.gates:
+                    name = gate.name.lower()
+                    qubits = [ssa_qubits[q] for q in gate.qubits]
                     operands = qubits.copy()
 
-                    if operator.parameters:
-                        for p in operator.parameters:
+                    if gate.parameters:
+                        for p in gate.parameters:
                             idx = param_index_map[p.id]
                             operands.append(block.arguments[idx])
 

@@ -6,7 +6,7 @@ before they are compiled to MLIR.
 
 from typing import List
 from contextvars import ContextVar
-from .operator import Operator
+from .gate import Gate
 
 
 class QuantumCircuit:
@@ -18,25 +18,25 @@ class QuantumCircuit:
 
         self._num_qubits = num_qubits
         self.little_endian = little_endian
-        self._operators: List[Operator] = []
+        self._gates: List[Gate] = []
 
     @property
     def num_qubits(self) -> int:
         return self._num_qubits
 
     @property
-    def operators(self) -> List[Operator]:
-        return self._operators
+    def gates(self) -> List[Gate]:
+        return self._gates
 
-    def append(self, operator: Operator):
-        """Append an operator to the circuit."""
-        if not isinstance(operator, Operator):
-            raise TypeError(f"Expected Operator, got {type(operator).__name__}")
-        if not all(0 <= q < self._num_qubits for q in operator.qubits):
+    def append(self, gate: Gate):
+        """Append a gate to the circuit."""
+        if not isinstance(gate, Gate):
+            raise TypeError(f"Expected Gate, got {type(gate).__name__}")
+        if not all(0 <= q < self._num_qubits for q in gate.qubits):
             # find the first qubit that is out of range
-            out_of_range_qubits = [q for q in operator.qubits if not (0 <= q < self._num_qubits)]
-            raise ValueError(f"Qubits {out_of_range_qubits} out of range [0, {self._num_qubits - 1}].")
-        self._operators.append(operator)
+            invalid_qubit = [q for q in gate.qubits if not (0 <= q < self._num_qubits)][0]
+            raise ValueError(f"{invalid_qubit} out of range (num_qubits={self._num_qubits}).")
+        self._gates.append(gate)
 
     def __enter__(self):
         if QuantumCircuit._current_circuit.get():
@@ -53,8 +53,8 @@ class QuantumCircuit:
 
     def __str__(self):
         lines = [f"QuantumCircuit({self._num_qubits} qubits):"]
-        lines += [f"  {op}" for op in self.operators]
+        lines += [f"  {op}" for op in self.gates]
         return "\n".join(lines)
 
     def __repr__(self):
-        return f"QuantumCircuit(num_qubits={self._num_qubits}, ops={self.operators})"
+        return f"QuantumCircuit(num_qubits={self._num_qubits}, ops={self.gates})"

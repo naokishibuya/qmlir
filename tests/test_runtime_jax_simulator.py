@@ -1,5 +1,3 @@
-"""Tests for qmlir.runtime.jax.simulator module."""
-
 import numpy as np
 import jax.numpy as jnp
 from qmlir.operator import CX, H, RX, RY, RZ, X, Z

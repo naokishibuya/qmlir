@@ -9,7 +9,8 @@ import jax.numpy as jnp
 from collections import Counter
 from typing import Dict
 from ...circuit import QuantumCircuit
-from ...operator import Observable, validate_observable, Z
+from ...observable import Observable
+from ...operator import Z
 from ...mlir import circuit_to_mlir, apply_passes
 from .engine import simulate_from_mlir
 from .observable import evaluate_observable
@@ -41,8 +42,8 @@ class JaxSimulator:
         if observable is None:
             qubits = list(range(num_qubits))
             observable = Z(*qubits)
-        else:
-            validate_observable(observable)
+        elif not isinstance(observable, Observable):
+            raise TypeError(f"Expected Observable, got {type(observable).__name__}")
         little_endian = circuit.little_endian
         return float(jnp.real(evaluate_observable(state_vector, num_qubits, observable, little_endian)))
 
@@ -69,7 +70,7 @@ class JaxSimulator:
         # Step 3: Collect parameter values from circuit
         param_values = []
         param_ids_seen = set()
-        for gate in circuit.operators:
+        for gate in circuit.gates:
             for param in gate.parameters:
                 if param.id not in param_ids_seen:
                     param_values.append(param.value)

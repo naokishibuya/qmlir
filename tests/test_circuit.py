@@ -7,7 +7,7 @@ class TestQuantumCircuit:
     def test_circuit_initialization(self):
         circuit = QuantumCircuit(3)
         assert circuit.num_qubits == 3
-        assert len(circuit.operators) == 0
+        assert len(circuit.gates) == 0
 
     def test_invalid_qubit_number(self):
         with pytest.raises(ValueError, match="must have at least one qubit"):
@@ -18,15 +18,15 @@ class TestQuantumCircuit:
             op1 = X(0)
             op2 = CX(0, 1)
         assert circuit.num_qubits == 2
-        assert len(circuit.operators) == 2
-        assert circuit.operators == [op1, op2]
+        assert len(circuit.gates) == 2
+        assert circuit.gates == [op1, op2]
 
     def test_len_and_iteration(self):
         circuit = QuantumCircuit(1)
         with circuit:
             X(0)
         assert circuit.num_qubits == 1
-        assert len(circuit.operators) == 1
+        assert len(circuit.gates) == 1
 
     def test_invalid_qubit(self):
         with QuantumCircuit(2):

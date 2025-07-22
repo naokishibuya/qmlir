@@ -1,5 +1,3 @@
-"""Tests for qmlir.parameter module."""
-
 from qmlir.parameter import Parameter
 
 
