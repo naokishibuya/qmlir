@@ -21,6 +21,7 @@ source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 pre-commit install
+pre-commit install --hook-type pre-push
 ```
 
 **3. Install clang-format (for C++ code formatting):**
