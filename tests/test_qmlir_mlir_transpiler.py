@@ -1,5 +1,3 @@
-import pytest
-from dataclasses import dataclass
 from qmlir.circuit import QuantumCircuit
 from qmlir.operator import X, RX, H, CX, RZ
 from qmlir.mlir.transpiler import apply_passes, circuit_to_mlir
@@ -60,27 +58,3 @@ def test_optimization_passes():
     assert "quantum.h" in mlir_code
     assert "quantum.x" not in optimized_mlir
     assert "quantum.h" in optimized_mlir
-
-
-@dataclass(frozen=True)
-class DummyMetadata:
-    name: str
-    kind: str
-    long_name: str
-    hermitian: bool
-    self_inverse: bool
-    unitary: bool = True
-
-
-def test_unknown_operator_raises():
-    qc = QuantumCircuit(1)
-
-    class DummyOperator:
-        metadata = DummyMetadata(
-            name="Dummy", kind="dummy", long_name="Dummy Operator", hermitian=False, self_inverse=False
-        )
-
-    qc.operators.append(DummyOperator())
-
-    with pytest.raises(AssertionError, match="Unknown operator: DummyOperator"):
-        circuit_to_mlir(qc)

@@ -30,7 +30,7 @@ class TestQuantumCircuit:
 
     def test_invalid_qubit(self):
         with QuantumCircuit(2):
-            with pytest.raises(ValueError, match="out of range for circuit with 2 qubits."):
+            with pytest.raises(ValueError, match="out of range"):
                 X(2)
 
     def test_str_representation(self):

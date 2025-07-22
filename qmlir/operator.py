@@ -18,21 +18,19 @@ class Operator:
         hermitian: bool = False,  # U^† = U
         self_inverse: bool = False,  # U^2 = I
     ):
-        # Add to the circuit
-        from .circuit import QuantumCircuit
-
-        circuit = QuantumCircuit.active_circuit()
-        if circuit is not None:
-            if not all(0 <= q < circuit.num_qubits for q in qubits):
-                raise ValueError(f"Qubits {qubits} out of range for circuit with {circuit.num_qubits} qubits.")
-            circuit.operators.append(self)
-
         self.name = name
         self.qubits = qubits
         self.parameters = parameters
         self.unitary = unitary
         self.hermitian = hermitian
         self.self_inverse = self_inverse
+
+        # Add to the circuit
+        from .circuit import QuantumCircuit
+
+        circuit = QuantumCircuit.current()
+        if circuit is not None:
+            circuit.append(self)
 
     def __repr__(self):
         qstr = ", ".join(f"{q}" for q in self.qubits)

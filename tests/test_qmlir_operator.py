@@ -1,6 +1,8 @@
 import pytest
+from dataclasses import dataclass
 from qmlir.circuit import QuantumCircuit
 from qmlir.operator import I, X, Y, Z, H, CX, CY, CZ, S, Sdg, T, Tdg, RX, RY, RZ
+
 
 # Categorize the operators
 PAULI_OPERATORS = [I, X, Y, Z]
@@ -63,3 +65,23 @@ def test_rotation_operator(op, circuit):
     assert inst.unitary
     assert inst.hermitian is False
     assert inst.self_inverse is False
+
+
+def test_unknown_operator_raises():
+    @dataclass(frozen=True)
+    class DummyMetadata:
+        name: str
+        kind: str
+        long_name: str
+        hermitian: bool
+        self_inverse: bool
+        unitary: bool = True
+
+    class DummyOperator:
+        metadata = DummyMetadata(
+            name="Dummy", kind="dummy", long_name="Dummy Operator", hermitian=False, self_inverse=False
+        )
+
+    qc = QuantumCircuit(1)
+    with pytest.raises(TypeError, match="Expected Operator, got DummyOperator"):
+        qc.append(DummyOperator())
