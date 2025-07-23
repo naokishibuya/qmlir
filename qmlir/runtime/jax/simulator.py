@@ -8,9 +8,7 @@ import jax
 import jax.numpy as jnp
 from collections import Counter
 from typing import Dict
-from ...circuit import QuantumCircuit
-from ...observable import Observable
-from ...operator import Z
+from ... import QuantumCircuit, Observable, operator
 from .circuit import simulate_circuit
 from .observable import evaluate_observable
 
@@ -40,7 +38,7 @@ class JaxSimulator:
         num_qubits = circuit.num_qubits
         if observable is None:
             qubits = list(range(num_qubits))
-            observable = Z(*qubits)
+            observable = operator.Z(*qubits)
         elif not isinstance(observable, Observable):
             raise TypeError(f"Expected Observable, got {type(observable).__name__}")
         little_endian = circuit.little_endian
